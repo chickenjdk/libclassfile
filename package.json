@@ -1,0 +1,37 @@
+{
+  "name": "libclassfile",
+  "version": "1.0.0",
+  "description": "Parse class files with ease",
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "publish": "npm publish --access=public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chickenjdk/libclassfile.git"
+  },
+  "keywords": [
+    "java",
+    "class file"
+  ],
+  "author": "chickenjdk",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chickenjdk/libclassfile/issues"
+  },
+  "homepage": "https://github.com/chickenjdk/libclassfile#readme",
+  "peerDependencies": {
+    "@chickenjdk/byteutils": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "typescript": "^5.7.2",
+    "@chickenjdk/common": "^1.0.0"
+  }
+}
