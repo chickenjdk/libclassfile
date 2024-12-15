@@ -9,8 +9,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
-    "publish": "npm publish --access=public"
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
