@@ -1,6 +1,6 @@
 {
   "name": "libclassfile",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Parse class files with ease",
   "main": "dist/index.js",
   "files": [
@@ -30,7 +30,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
-    "typescript": "^5.7.2",
-    "@chickenjdk/common": "^1.0.0"
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@chickenjdk/common": "^1.0.1"
   }
 }
