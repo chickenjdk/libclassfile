@@ -5,7 +5,11 @@ name: Deploy
 on:
   release:
     types: [published]
-    permissions: write-all
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
 
 jobs:
   deploy:
