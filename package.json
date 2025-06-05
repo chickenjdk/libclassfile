@@ -9,7 +9,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "docs": "typedoc --options typedoc.json"
   },
   "repository": {
     "type": "git",
@@ -26,10 +27,11 @@
   },
   "homepage": "https://github.com/chickenjdk/libclassfile#readme",
   "peerDependencies": {
-    "@chickenjdk/byteutils": "^2.0.0"
+    "@chickenjdk/byteutils": "^3.1.2"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
+    "typedoc": "^0.28.5",
     "typescript": "^5.7.2"
   },
   "dependencies": {

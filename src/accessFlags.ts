@@ -1,19 +1,11 @@
 import type { readableBuffer } from "@chickenjdk/byteutils";
 import { bitMaskBool } from "@chickenjdk/common";
+import { accessFlags, innerClassAccessFlags, methodParametersAccessFlags, methodsAccessFlags, moduleAttributeAccessFlags, moduleAttributeExportsFlags, moduleAttributeRequiresAccessFlags } from "./types";
 /**
  * See https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html#jvms-4.4.6
  * @param buffer The buffer to read from
  */
-export function readAccessFlags(buffer: readableBuffer): {
-  isPublic: boolean;
-  isFinal: boolean;
-  isSuper: boolean;
-  isInterface: boolean;
-  isAbstract: boolean;
-  isAnnotation: boolean;
-  isEnum: boolean;
-  isModule: boolean;
-} {
+export function readAccessFlags(buffer: readableBuffer): accessFlags {
   const flags = buffer.readUnsignedInt(2);
   const isPublic = bitMaskBool(flags, 0x0001);
   const isFinal = bitMaskBool(flags, 0x0010);
@@ -38,18 +30,9 @@ export function readAccessFlags(buffer: readableBuffer): {
  * See https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html#jvms-4.7.4
  * @param buffer The buffer to read from
  */
-export function readInnerClassAccessFlags(buffer: readableBuffer): {
-  isPublic: boolean;
-  isPrivate: boolean;
-  isProtected: boolean;
-  isStatic: boolean;
-  isFinal: boolean;
-  isInterface: boolean;
-  isAbstract: boolean;
-  isSynthetic: boolean;
-  isAnnotation: boolean;
-  isEnum: boolean;
-} {
+export function readInnerClassAccessFlags(
+  buffer: readableBuffer
+): innerClassAccessFlags {
   const flags = buffer.readUnsignedInt(2);
   const isPublic = bitMaskBool(flags, 0x0001);
   const isPrivate = bitMaskBool(flags, 0x0002);
@@ -78,7 +61,9 @@ export function readInnerClassAccessFlags(buffer: readableBuffer): {
  * See https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html#jvms-4.6-200-A.1
  * @param buffer The buffer to read from
  */
-export function readMethodsAccessFlags(buffer: readableBuffer) {
+export function readMethodsAccessFlags(
+  buffer: readableBuffer
+): methodsAccessFlags {
   const flags = buffer.readUnsignedInt(2);
   const isPublic = bitMaskBool(flags, 0x0001);
   const isPrivate = bitMaskBool(flags, 0x0002);
@@ -111,7 +96,9 @@ export function readMethodsAccessFlags(buffer: readableBuffer) {
  * See https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html#jvms-4.7.24
  * @param buffer The buffer to read from
  */
-export function readMethodParametersAccessFlags(buffer: readableBuffer) {
+export function readMethodParametersAccessFlags(
+  buffer: readableBuffer
+): methodParametersAccessFlags {
   const flags = buffer.readUnsignedInt(2);
   const isFinal = bitMaskBool(flags, 0x0010);
   const isSynthetic = bitMaskBool(flags, 0x1000);
@@ -122,7 +109,9 @@ export function readMethodParametersAccessFlags(buffer: readableBuffer) {
  * See https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html#jvms-4.7.25
  * @param buffer The buffer to read from
  */
-export function readModuleAttributeAccessFlags(buffer: readableBuffer) {
+export function readModuleAttributeAccessFlags(
+  buffer: readableBuffer
+): moduleAttributeAccessFlags {
   const flags = buffer.readUnsignedInt(2);
   const isOpen = bitMaskBool(flags, 0x0020);
   const isSynthetic = bitMaskBool(flags, 0x1000);
@@ -133,7 +122,9 @@ export function readModuleAttributeAccessFlags(buffer: readableBuffer) {
  * See https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html#jvms-4.7.25
  * @param buffer The buffer to read from
  */
-export function readModuleAttributeRequiresAccessFlags(buffer: readableBuffer) {
+export function readModuleAttributeRequiresAccessFlags(
+  buffer: readableBuffer
+): moduleAttributeRequiresAccessFlags {
   const flags = buffer.readUnsignedInt(2);
   const isTransitive = bitMaskBool(flags, 0x0020);
   const isStaticPhase = bitMaskBool(flags, 0x0040);
@@ -145,7 +136,9 @@ export function readModuleAttributeRequiresAccessFlags(buffer: readableBuffer) {
  * See https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html#jvms-4.7.25
  * @param buffer The buffer to read from
  */
-export function readModuleAttributeExportsFlags(buffer: readableBuffer) {
+export function readModuleAttributeExportsFlags(
+  buffer: readableBuffer
+): moduleAttributeExportsFlags {
   const flags = buffer.readUnsignedInt(2);
   const isSynthetic = bitMaskBool(flags, 0x1000);
   const isMandated = bitMaskBool(flags, 0x8000);

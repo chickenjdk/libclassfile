@@ -5,20 +5,16 @@ import {
   assertInfoType,
   predefinedValidClassFileAttributesMap,
 } from "./common";
-import { getLegalAttributes } from "./attributes/types";
+import { attribute, getLegalAttributes } from "./attributes/types";
 import { readAttribute } from "./attributes/parser";
 import { assertAttributeType } from "./attributes/helpers";
+import { Expand, expansionIgnoreList, methodsAccessFlags, methods } from "./types";
 export function readMethods(
   buffer: readableBuffer,
   constantPool: PoolType,
   methodsCount: number
-) {
-  const methods: {
-    accessFlags: ReturnType<typeof readMethodsAccessFlags>;
-    name: utf8Info;
-    descriptor: utf8Info;
-    attributes: getLegalAttributes<"method_info">;
-  }[] = [];
+): methods {
+  const methods: methods = [];
   for (let index = 0; index < methodsCount; index++) {
     const accessFlags = readMethodsAccessFlags(buffer);
     const nameIndex = buffer.readUnsignedInt(2);

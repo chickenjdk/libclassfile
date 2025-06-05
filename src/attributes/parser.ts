@@ -80,7 +80,7 @@ export function readAttribute(
       const maxStack = buffer.readUnsignedInt(2);
       const maxLocals = buffer.readUnsignedInt(2);
       const codeLength = buffer.readUnsignedInt(4);
-      const code = buffer.read(codeLength);
+      const code = buffer.readArray(codeLength);
       const exceptionTableLength = buffer.readUnsignedInt(2);
       let exceptionTable: exceptionTable = [];
       for (let index = 0; index < exceptionTableLength; index++) {

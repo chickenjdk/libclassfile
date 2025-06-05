@@ -10,17 +10,18 @@ import {
 } from "./common";
 import { classInfo } from "./constantPool/types";
 import { readMethods } from "./methods";
-import { getLegalAttributes } from "./attributes/types";
+import { attribute, getLegalAttributes } from "./attributes/types";
 import { readAttribute } from "./attributes/parser";
 import { assertAttributeType } from "./attributes/helpers";
+import { Expand, expansionIgnoreList, classFile } from "./types";
 /**
  * Parse a class file. Nearly completely up to the specs at https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html
  * @param buffer
  * @returns
  */
-export function readClassFile(buffer: readableBuffer) {
+export function readClassFile(buffer: readableBuffer): classFile {
   const magicNumber = buffer
-    .read(4)
+    .readArray(4)
     .map((value) => value.toString(16))
     .join("");
   if (magicNumber !== "cafebabe") {
@@ -46,7 +47,10 @@ export function readClassFile(buffer: readableBuffer) {
   const methodsCount = buffer.readUnsignedInt(2);
   const methods = readMethods(buffer, constantPool, methodsCount);
   const attributesCount = buffer.readUnsignedInt(2);
-  const attributes: getLegalAttributes<"ClassFile"> = [];
+  const attributes: Expand<
+    getLegalAttributes<"ClassFile">,
+    expansionIgnoreList
+  > = [];
   for (let index = 0; index < attributesCount; index++) {
     const attribute = readAttribute(
       buffer,
@@ -74,3 +78,7 @@ export function readClassFile(buffer: readableBuffer) {
     attributes,
   };
 }
+
+export * from "./attributes/types";
+export * from "./constantPool/types";
+export * from "./types";

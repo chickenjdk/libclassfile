@@ -1,0 +1,18 @@
+# .github/workflows/deploy.yml
+
+name: Deploy
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    uses: chickenjdk/github-actions-workflows/.github/workflows/deploy-docs-and-publish.yml@main
+    with:
+      node-version: '22'
+      registry-url: 'https://registry.npmjs.org/'
+      docs-dir: './docs'
+      docs-base-url: 'https://chickenjdk.github.io/byteutils'
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

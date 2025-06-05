@@ -1,0 +1,9 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/index.ts"],
+  "out": "docs",
+  "exclude": ["**/node_modules/**", "**/dist/**"],
+  "highlightLanguages": ["java", "javascript", "typescript", "json"],
+  "includeVersion": true,
+  "plugin": ["./dist/docPlugins/expandResolvedTypes.js"]
+}

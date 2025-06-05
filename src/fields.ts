@@ -2,7 +2,6 @@ import type { readableBuffer } from "@chickenjdk/byteutils";
 import type {
   findInfoTypeByTag,
   poolTags,
-  utf8Info,
 } from "./constantPool/types";
 import type { PoolType } from "./constantPool/types";
 import {
@@ -13,22 +12,7 @@ import { bitMaskBool } from "@chickenjdk/common";
 import { getLegalAttributes } from "./attributes/types";
 import { readAttribute } from "./attributes/parser";
 import { assertAttributeType } from "./attributes/helpers";
-type flags = {
-  isPublic: boolean;
-  isPrivate: boolean;
-  isProtected: boolean;
-  isStatic: boolean;
-  isFinal: boolean;
-  isVolatile: boolean;
-  isTransient: boolean;
-  isSynthetic: boolean;
-  isEnum: boolean;
-};
-type fields = {
-  flags: flags;
-  name: utf8Info;
-  attributes: getLegalAttributes<"field_info">;
-}[];
+import { flags, fields } from "./types";
 function makeDescription(index: number, flags: flags): string {
   return `Field entry with index ${index} and flags ${Object.entries(flags)
     .filter(([_key, value]) => value)

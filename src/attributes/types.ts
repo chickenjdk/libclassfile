@@ -1,12 +1,10 @@
 import type { range } from "@chickenjdk/common";
-import type {
-  readInnerClassAccessFlags,
-  readMethodParametersAccessFlags,
-  readModuleAttributeAccessFlags,
-  readModuleAttributeExportsFlags,
-  readModuleAttributeOpensFlags,
-  readModuleAttributeRequiresAccessFlags,
-} from "../accessFlags";
+import type { expansionIgnoreListSafe, moduleAttributeOpensFlags } from "../types";
+import type { moduleAttributeExportsFlags } from "../types";
+import type { moduleAttributeRequiresAccessFlags } from "../types";
+import type { moduleAttributeAccessFlags } from "../types";
+import type { methodParametersAccessFlags } from "../types";
+import type { innerClassAccessFlags } from "../types";
 import type { predefinedValidClassFileAttributesMap } from "../common";
 import type {
   poolTags,
@@ -27,7 +25,11 @@ import type {
   utf8Info,
   nameAndTypeInfo,
 } from "../constantPool/types";
+import { Expand } from "../types";
 
+/**
+ * @private
+ */
 export type customAssertInfoType = <expectedTag extends poolTags | poolTags[]>(
   expectedTag: expectedTag,
   entryIndex: number,
@@ -115,18 +117,23 @@ export type stackMapFrame =
   | appendFrame
   | fullFrame;
 // Stack map frames (Remapped to make easer to process)
+/**
+ * @private
+ */
 export type remapFrame<T> = T extends any
   ? Omit<T, "offsetDelta"> & { offset: number }
   : never;
-export type stackMapFrames = remapFrame<
-  | sameFrame
-  | sameLocals1StackItemFrame
-  | sameLocals1StackItemFrameExtended
-  | chopFrame
-  | sameFrameExtended
-  | appendFrame
-  | fullFrame
->[];
+export type stackMapFrames = Expand<
+  remapFrame<
+    | sameFrame
+    | sameLocals1StackItemFrame
+    | sameLocals1StackItemFrameExtended
+    | chopFrame
+    | sameFrameExtended
+    | appendFrame
+    | fullFrame
+  >[]
+,expansionIgnoreListSafe>;
 export type stackMapTable = { name: "StackMapTable"; entries: stackMapFrames };
 // No more stack map table CHICKEN POOP
 export type exeptions = { name: "Exeptions"; exeptions: classInfo[] };
@@ -136,7 +143,7 @@ export type innerClasses = {
     innerClassInfo: classInfo | undefined;
     outerClassInfo: classInfo | undefined;
     innerName: utf8Info | undefined;
-    InnerClassAccessFlags: ReturnType<typeof readInnerClassAccessFlags>;
+    InnerClassAccessFlags: innerClassAccessFlags;
   }[];
 };
 export type enclosingMethod = {
@@ -218,9 +225,15 @@ export type targetTypes = {
   0x4a: "typeArgumentTarget";
   0x4b: "typeArgumentTarget";
 };
+/**
+ * @private
+ */
 type entries<T, K extends keyof T = keyof T> = K extends any
   ? [K, T[K]]
   : never;
+/**
+ * @private
+ */
 type addCodes<T extends { targetType: targetTypes[keyof targetTypes] }> =
   T extends any
     ? T & {
@@ -230,33 +243,35 @@ type addCodes<T extends { targetType: targetTypes[keyof targetTypes] }> =
         >[0];
       }
     : never;
-export type targetInfo = addCodes<
-  | {
-      targetType: "typeParameterTarget";
-      typeParameterIndex: number;
-    }
-  | { targetType: "supertypeTarget"; supertypeIndex: number }
-  | {
-      targetType: "typeParameterBoundTarget";
-      typeParameterIndex: number;
-      boundIndex: number;
-    }
-  | {
-      targetType: "emptyTarget";
-    }
-  | { targetType: "formalParameterTarget"; formalParameterIndex: number }
-  | { targetType: "throwsTarget"; throwsTypeIndex: number }
-  | {
-      targetType: "localvarTarget";
-      table: { startPc: number; length: number; index: number }[];
-    }
-  | { targetType: "catchTarget"; exceptionTableIndex: number }
-  | { targetType: "offsetTarget"; offset: number }
-  | {
-      targetType: "typeArgumentTarget";
-      offset: number;
-      typeArgumentIndex: number;
-    }
+export type targetInfo = Expand<
+  addCodes<
+    | {
+        targetType: "typeParameterTarget";
+        typeParameterIndex: number;
+      }
+    | { targetType: "supertypeTarget"; supertypeIndex: number }
+    | {
+        targetType: "typeParameterBoundTarget";
+        typeParameterIndex: number;
+        boundIndex: number;
+      }
+    | {
+        targetType: "emptyTarget";
+      }
+    | { targetType: "formalParameterTarget"; formalParameterIndex: number }
+    | { targetType: "throwsTarget"; throwsTypeIndex: number }
+    | {
+        targetType: "localvarTarget";
+        table: { startPc: number; length: number; index: number }[];
+      }
+    | { targetType: "catchTarget"; exceptionTableIndex: number }
+    | { targetType: "offsetTarget"; offset: number }
+    | {
+        targetType: "typeArgumentTarget";
+        offset: number;
+        typeArgumentIndex: number;
+      }
+  >, expansionIgnoreListSafe
 >;
 export type typeAnnotation = {
   targetInfo: targetInfo;
@@ -295,27 +310,28 @@ export type methodParameters = {
   name: "MethodParameters";
   parameters: {
     name: utf8Info | undefined;
-    accessFlags: ReturnType<typeof readMethodParametersAccessFlags>;
+    accessFlags: methodParametersAccessFlags;
   }[];
 };
+
 export type module = {
   name: "Module";
   moduleName: utf8Info;
-  moduleFlags: ReturnType<typeof readModuleAttributeAccessFlags>;
+  moduleFlags: moduleAttributeAccessFlags;
   moduleVersion: utf8Info | undefined;
   requires: {
     requires: moduleInfo;
-    requiresFlags: ReturnType<typeof readModuleAttributeRequiresAccessFlags>;
+    requiresFlags: moduleAttributeRequiresAccessFlags;
     requiresVersion: utf8Info | undefined;
   }[];
   exports: {
     exports: packageInfo;
-    exportsFlags: ReturnType<typeof readModuleAttributeExportsFlags>;
+    exportsFlags: moduleAttributeExportsFlags;
     exportsTo: moduleInfo[];
   }[];
   opens: {
     opens: packageInfo;
-    opensFlags: ReturnType<typeof readModuleAttributeOpensFlags>;
+    opensFlags: moduleAttributeOpensFlags;
     opensTo: moduleInfo[];
   }[];
   uses: classInfo[];
@@ -328,14 +344,17 @@ export type modulePackages = {
 export type moduleMainClass = { name: "ModuleMainClass"; mainClass: classInfo };
 export type nestHost = { name: "NestHost"; hostClass: classInfo };
 export type nestMembers = { name: "NestMembers"; classes: classInfo[] };
-export type record = {
-  name: "Record";
-  components: {
-    name: utf8Info;
-    descriptor: utf8Info;
-    attributes: getLegalAttributes<"record_component_info">;
-  }[];
-};
+export type record = Expand<
+  {
+    name: "Record";
+    components: {
+      name: utf8Info;
+      descriptor: utf8Info;
+      attributes: getLegalAttributes<"record_component_info">;
+    }[];
+  },
+  expansionIgnoreListSafe
+>;
 export type permittedSubclasses = {
   name: "PermittedSubclasses";
   classes: classInfo[];
@@ -396,6 +415,10 @@ export type annotation = {
     value: elementValue;
   }[];
 };
+/**
+ * Returns the legal attributes for a given class file type.
+ * @private
+ */
 export type getLegalAttributes<
   T extends keyof typeof predefinedValidClassFileAttributesMap
 > = Extract<
