@@ -5,7 +5,7 @@ name: Deploy
 on:
   release:
     types: [published]
-  permissions: write-all
+    permissions: write-all
 
 jobs:
   deploy:
