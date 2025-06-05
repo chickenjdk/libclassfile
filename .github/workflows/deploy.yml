@@ -14,6 +14,6 @@ jobs:
       node-version: '22'
       registry-url: 'https://registry.npmjs.org/'
       docs-dir: './docs'
-      docs-base-url: 'https://chickenjdk.github.io/byteutils'
+      docs-base-url: 'https://chickenjdk.github.io/libclassfile'
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
