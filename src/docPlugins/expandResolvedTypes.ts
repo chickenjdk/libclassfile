@@ -129,8 +129,6 @@ export function load(app: Application) {
         const tsType = checker.getDeclaredTypeOfSymbol(symbol);
 
         const converted = context.converter.convertType(context, tsType);
-        //reflection.type = converted;
-        //reflection
         typeCapture.set(reflection, converted);
       }
     }
