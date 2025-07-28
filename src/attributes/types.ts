@@ -26,6 +26,7 @@ import type {
   nameAndTypeInfo,
 } from "../constantPool/types";
 import { Expand } from "../types";
+import { BytecodeInstruction } from "../bytecode/types";
 
 /**
  * @private
@@ -45,7 +46,7 @@ export type code = {
   name: "Code";
   maxStack: number;
   maxLocals: number;
-  code: number[];
+  code: BytecodeInstruction[];
   exceptionTable: exceptionTable;
   attributes: attribute[];
 };

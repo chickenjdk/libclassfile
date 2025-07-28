@@ -41,6 +41,7 @@ import {
 } from "./helpers";
 import { predefinedValidClassFileAttributesMap } from "../common";
 import { disallowedError } from "../errors";
+import { parseBytecode } from "../bytecode/parse";
 export function readAttribute(
   allBuffer: readableBuffer,
   constantPool: PoolType,
@@ -80,7 +81,7 @@ export function readAttribute(
       const maxStack = buffer.readUnsignedInt(2);
       const maxLocals = buffer.readUnsignedInt(2);
       const codeLength = buffer.readUnsignedInt(4);
-      const code = buffer.readArray(codeLength);
+      const code = parseBytecode(buffer.readReadableBuffer(codeLength));
       const exceptionTableLength = buffer.readUnsignedInt(2);
       let exceptionTable: exceptionTable = [];
       for (let index = 0; index < exceptionTableLength; index++) {

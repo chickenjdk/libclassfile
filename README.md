@@ -1,10 +1,15 @@
 # libclassfile
+
 Parse class files with ease. Nearly completely up to the specs at [https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html](https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html) and strongly typed. [Docs](https://chickenjdk.github.io/libclassfile/docs/1.1.0)
 
 # Use
+
 First, install @chickenjdk/byteutils
+
 ## Example use:
+
 In this example, there is a file called main.class in the dir, with this source code
+
 ```java
 public class main
 {
@@ -14,7 +19,9 @@ public class main
     }
 }
 ```
+
 Example use code
+
 ```js
 const { readClassFile } = require("libclassfile");
 const { readFileSync } = require("fs");
@@ -22,8 +29,11 @@ const { readableBuffer } = require("@chickenjdk/byteutils");
 const testFile = readFileSync("./main.class");
 console.log(JSON.stringify(readClassFile(new readableBuffer(testFile))));
 ```
+
 ### Example output:
+
 Parsed class file of source code with this package
+
 ```json
 {
   "minorVersion": 0,
@@ -187,7 +197,29 @@ Parsed class file of source code with this package
           "name": "Code",
           "maxStack": 1,
           "maxLocals": 1,
-          "code": [42, 183, 0, 1, 177],
+          "code": [
+            {
+              "pos": 0,
+              "opcode": 42,
+              "mnemonic": "aload_0",
+              "operands": [42],
+              "wide": false
+            },
+            {
+              "pos": 1,
+              "opcode": 183,
+              "mnemonic": "invokespecial",
+              "operands": [183, 0, 1],
+              "wide": false
+            },
+            {
+              "pos": 4,
+              "opcode": 177,
+              "mnemonic": "return",
+              "operands": [177],
+              "wide": false
+            }
+          ],
           "exceptionTable": [],
           "attributes": [
             {
@@ -224,7 +256,36 @@ Parsed class file of source code with this package
           "name": "Code",
           "maxStack": 2,
           "maxLocals": 1,
-          "code": [178, 0, 7, 18, 13, 182, 0, 15, 177],
+          "code": [
+            {
+              "pos": 0,
+              "opcode": 178,
+              "mnemonic": "getstatic",
+              "operands": [178, 0, 7],
+              "wide": false
+            },
+            {
+              "pos": 3,
+              "opcode": 18,
+              "mnemonic": "ldc",
+              "operands": [18, 13],
+              "wide": false
+            },
+            {
+              "pos": 5,
+              "opcode": 182,
+              "mnemonic": "invokevirtual",
+              "operands": [182, 0, 15],
+              "wide": false
+            },
+            {
+              "pos": 8,
+              "opcode": 177,
+              "mnemonic": "return",
+              "operands": [177],
+              "wide": false
+            }
+          ],
           "exceptionTable": [],
           "attributes": [
             {

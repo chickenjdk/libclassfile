@@ -81,4 +81,6 @@ export function readClassFile(buffer: readableBuffer): classFile {
 
 export * from "./attributes/types";
 export * from "./constantPool/types";
+export * from "./bytecode/types";
+export * from "./bytecode/parse";
 export * from "./types";
