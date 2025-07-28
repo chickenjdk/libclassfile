@@ -1,6 +1,6 @@
 # libclassfile
 
-Parse class files with ease. Nearly completely up to the specs at [https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html](https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html) and strongly typed. [Docs](https://chickenjdk.github.io/libclassfile/docs/1.1.0)
+Parse class files with ease. Nearly completely up to the specs at [https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html](https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html) and strongly typed. [Docs](https://chickenjdk.github.io/libclassfile/docs/v2.0.1)
 
 # Use
 
