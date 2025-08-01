@@ -1,11 +1,11 @@
 import { unwidenableOpcodeError, noOperandError } from "../errors";
-import { BytecodeInstruction, opcodeMnemonics } from "./types";
+import { BytecodeInstructionType, opcodeMnemonics } from "./types";
 import { readableBuffer } from "@chickenjdk/byteutils";
 
 export function parseBytecode(
   bytecodeBuffer: readableBuffer
-): BytecodeInstruction[] {
-  const instructions: BytecodeInstruction[] = [];
+): BytecodeInstructionType[] {
+  const instructions: BytecodeInstructionType[] = [];
   let wideMode = false;
   while (bytecodeBuffer.length > 0) {
     const pos = bytecodeBuffer._offset;
@@ -71,14 +71,14 @@ export function parseBytecode(
 
       default: /* normal opcode */
         const bytecodeFormat = wideMode ? wideFormat : format;
-        const operands: (number | bigint)[] = [];
+        const operands = [];
         for (const char of bytecodeFormat as Exclude<
           typeof bytecodeFormat,
           null
         >) {
           switch (char) {
             case "b":
-              operands.push(opcode); // b = the opcode byte itself, useful for wide mode; store for trace/debug
+              operands.push(opcode); // b = the opcode
               break;
             case "c": // unsigned byte
             case "k": // constant pool index (u1)
@@ -104,7 +104,6 @@ export function parseBytecode(
               operands.push(bytecodeBuffer.readSignedInteger(4));
               break;
             case "_":
-              // skip padding bytes — could be done manually if needed
               break;
             case "w": // Handled, skip
               break;
@@ -120,6 +119,7 @@ export function parseBytecode(
           pos,
           opcode,
           mnemonic,
+          // @ts-ignore
           operands,
           wide: wideMode,
         });
