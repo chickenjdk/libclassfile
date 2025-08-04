@@ -136,6 +136,7 @@ export type fields = Expand<
   {
     flags: flags;
     name: utf8Info;
+    descriptor: utf8Info;
     attributes: getLegalAttributes<"field_info">;
   }[],
   expansionIgnoreList

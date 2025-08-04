@@ -1,8 +1,5 @@
 import type { readableBuffer } from "@chickenjdk/byteutils";
-import type {
-  findInfoTypeByTag,
-  poolTags,
-} from "./constantPool/types";
+import type { findInfoTypeByTag, poolTags } from "./constantPool/types";
 import type { PoolType } from "./constantPool/types";
 import {
   assertInfoType as __assertInfoType_old__,
@@ -88,7 +85,12 @@ export function readFields(
       );
       attributes[index] = attribute;
     }
-    fields[index] = { flags, name: nameEntry, attributes };
+    fields[index] = {
+      flags,
+      name: nameEntry,
+      descriptor: descriptorEntry,
+      attributes,
+    };
   }
   return fields;
 }
