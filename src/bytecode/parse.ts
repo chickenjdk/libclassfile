@@ -7,8 +7,10 @@ export function parseBytecode(
 ): BytecodeInstructionType[] {
   const instructions: BytecodeInstructionType[] = [];
   let wideMode = false;
+  const orgiginalPosition = bytecodeBuffer._offset;
   while (bytecodeBuffer.length > 0) {
-    const pos = bytecodeBuffer._offset;
+    // Must be aligned relitive to the start of the bytecode
+    const pos = bytecodeBuffer._offset-orgiginalPosition;
     const { wideFormat, format, mnemonic, opcode } =
       opcodeMnemonics[bytecodeBuffer.shift()];
     if (wideMode && (wideFormat === null || wideFormat === undefined)) {
@@ -22,7 +24,7 @@ export function parseBytecode(
         break;
       case 0xaa /* tableswitch */:
         if (true) {
-          const pad = (4 - (bytecodeBuffer._offset % 4)) % 4;
+          const pad = (4 - (pos % 4)) % 4;
           bytecodeBuffer.read(pad);
 
           const defaultOffset = bytecodeBuffer.readSignedInteger(4);
