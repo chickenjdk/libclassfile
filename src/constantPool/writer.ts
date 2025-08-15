@@ -232,7 +232,6 @@ export class PoolRegister {
     }
     entry.index = ++this.#poolLength;
     this.#pool[this.#poolLength] = entry;
-    console.log(entry);
     return this.#poolLength;
   }
   get pool() {

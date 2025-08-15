@@ -77,7 +77,6 @@ export function writeAttribute(
         const buff = new writableBuffer();
 
         writeBytecode(buff, attribute.code, constantPool);
-        console.log(buff.length)
         flushBuff.writeUnsignedInt(buff.length, 4);
         flushBuff.writeWriteableBuffer(buff);
         flushBuff.writeUnsignedInt(attribute.exceptionTable.length, 2)
@@ -629,7 +628,6 @@ export function writeAttribute(
   // Write metadata
   const nameIndex = constantPool.registerEntry(attribute.name);
   customAssertInfoType(1, nameIndex, attribute.name);
-  console.log("Writing attribute", attribute.name.value, "index", nameIndex);
   buffer.writeUnsignedInt(nameIndex, 2);
   buffer.writeUnsignedInt(flushBuff.length, 4);
   // Write attribute

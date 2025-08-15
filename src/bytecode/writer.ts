@@ -112,14 +112,12 @@ export function writeBytecode(
       if (kCount === 1) {
         const poolIndex = operands[cleanFormat.indexOf("k")] as number;
         const newIndex = poolIndexMapping[poolIndex];
-        console.log(newIndex);
         operands[cleanFormat.indexOf("k")] = newIndex;
       } else if (kCount === 2) {
         const poolIndex =
           ((operands[cleanFormat.indexOf("k")] as number) << 8) |
           (operands[cleanFormat.indexOf("k") + 1] as number);
         const newIndex = poolIndexMapping[poolIndex];
-        console.log(newIndex);
 
         operands[cleanFormat.indexOf("k")] = newIndex >> 8;
         operands[cleanFormat.indexOf("k") + 1] = newIndex & 0xff;
