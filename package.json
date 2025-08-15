@@ -32,10 +32,9 @@
   "devDependencies": {
     "@chickenjdk/byteutils": "^3.2.1",
     "@types/node": "^22.10.1",
-    "typedoc": "^0.28.5",
-    "typescript": "^5.7.2"
+    "typedoc": "^0.28.5"
   },
   "dependencies": {
-    "@chickenjdk/common": "^1.0.1"
+    "@chickenjdk/common": "^2.0.0"
   }
 }

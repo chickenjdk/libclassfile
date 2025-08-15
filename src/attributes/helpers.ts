@@ -1,5 +1,5 @@
-import type { readableBuffer } from "@chickenjdk/byteutils";
-import { PoolType } from "../constantPool/types";
+import type { readableBuffer, writableBuffer } from "@chickenjdk/byteutils";
+import { PoolType, utf8Info } from "../constantPool/types";
 import { disallowedError, invalidPointerError, unknownError } from "../errors";
 import {
   annotation,
@@ -7,6 +7,7 @@ import {
   byteOffsetDelta,
   customAssertInfoType,
   elementValue,
+  makeStringUtf8Info,
   stackMapFrame,
   stackMapFrames,
   targetInfo,
@@ -14,6 +15,8 @@ import {
   verificationTypeInfo,
 } from "./types";
 import { inRange, makeMutable, range } from "@chickenjdk/common";
+import { flushSinkWritableBuffer } from "../customBuffers";
+import { PoolRegister } from "../constantPool/writer";
 
 const validTags = [1, 2, 3, 4, 5, 6, 7, 8];
 export function readVerificationTypeInfo(
@@ -38,6 +41,37 @@ export function readVerificationTypeInfo(
     }
     default: {
       return { tag };
+    }
+  }
+}
+export function writeVerificationTypeInfo(
+  buffer: writableBuffer | flushSinkWritableBuffer,
+  verificationType: verificationTypeInfo,
+  constantPool: PoolRegister,
+  customAssertInfoType: customAssertInfoType
+): void {
+  const { tag } = verificationType;
+  if (!validTags.includes(tag)) {
+    throw new unknownError(
+      `Unknown verificationTypeInfo tag ${tag} in writeVerificationTypeInfo`
+    );
+  }
+  buffer.push(tag);
+  switch (tag) {
+    case 7: {
+      const { cpool } = verificationType;
+      const cpoolIndex = constantPool.registerEntry(cpool);
+      customAssertInfoType(7, cpoolIndex, cpool);
+      buffer.writeUnsignedInt(cpoolIndex, 2);
+      break;
+    }
+    case 8: {
+      const { offset } = verificationType;
+      buffer.writeUnsignedInt(offset, 2);
+    }
+    // Nothing else to do
+    default: {
+      break;
     }
   }
 }
@@ -104,6 +138,73 @@ export function readStackMapFrame(
     return { frameType: "fullFrame", offsetDelta, locals, stack };
   }
 }
+export function writeStackMapFrame(
+  buffer: writableBuffer | flushSinkWritableBuffer,
+  frame: stackMapFrame,
+  constantPool: PoolRegister,
+  customAssertInfoType: customAssertInfoType
+) {
+  const { frameType } = frame;
+  if (frameType === "sameFrame") {
+    buffer.push(frame.offsetDelta);
+  } else if (frameType === "sameLocals1StackItemFrame") {
+    buffer.push(64 + frame.offsetDelta);
+    writeVerificationTypeInfo(
+      buffer,
+      frame.stack[0],
+      constantPool,
+      customAssertInfoType
+    );
+  } else if (frameType === "sameLocals1StackItemFrameExtended") {
+    buffer.writeUnsignedInt(frame.offsetDelta, 2);
+    writeVerificationTypeInfo(
+      buffer,
+      frame.stack[0],
+      constantPool,
+      customAssertInfoType
+    );
+  } else if (frameType === "chopFrame") {
+    buffer.writeUnsignedInt(frame.offsetDelta, 2);
+    buffer.push(251 - frame.frames);
+  } else if (frameType === "sameFrameExtended") {
+    buffer.writeUnsignedInt(frame.offsetDelta, 2);
+  } else if (frameType === "appendFrame") {
+    buffer.writeUnsignedInt(frame.offsetDelta, 2);
+    buffer.push(251 + frame.locals.length);
+    for (const local of frame.locals) {
+      writeVerificationTypeInfo(
+        buffer,
+        local,
+        constantPool,
+        customAssertInfoType
+      );
+    }
+  } else if (frameType === "fullFrame") {
+    buffer.writeUnsignedInt(frame.offsetDelta, 2);
+    buffer.writeUnsignedInt(frame.locals.length, 2);
+    for (const local of frame.locals) {
+      writeVerificationTypeInfo(
+        buffer,
+        local,
+        constantPool,
+        customAssertInfoType
+      );
+    }
+    buffer.writeUnsignedInt(frame.stack.length, 2);
+    for (const item of frame.stack) {
+      writeVerificationTypeInfo(
+        buffer,
+        item,
+        constantPool,
+        customAssertInfoType
+      );
+    }
+  } else {
+    throw new unknownError(
+      `Unknown stackMapFrame type ${frameType} in writeStackMapFrame`
+    );
+  }
+}
 export function readStackMapFrames(
   numberOfFrames: number,
   buffer: readableBuffer,
@@ -130,6 +231,30 @@ export function readStackMapFrames(
   }
   return frames;
 }
+export function writeStackMapFrames(
+  buffer: writableBuffer | flushSinkWritableBuffer,
+  frames: stackMapFrames,
+  constantPool: PoolRegister,
+  customAssertInfoType: customAssertInfoType
+): void {
+  buffer.writeUnsignedInt(frames.length, 2);
+  let previousOffset = 0;
+
+  for (let index = 0; index < frames.length; index++) {
+    const frame = frames[index] as stackMapFrames[number] & stackMapFrame;
+
+    if (index === 0) {
+      frame.offsetDelta = frame.offset; // first frame is just offsetDelta
+    } else {
+      frame.offsetDelta = frame.offset - previousOffset - 1; // undo the +1
+    }
+    // @ts-ignore
+    delete frame.offset; // Strip absolute offsets
+    previousOffset = frame.offset;
+    writeStackMapFrame(buffer, frame, constantPool, customAssertInfoType);
+  }
+}
+
 export function readElementValue(
   buffer: readableBuffer,
   constantPool: PoolType,
@@ -216,6 +341,95 @@ export function readElementValue(
     }
   }
 }
+
+export function writeElementValue(
+  buffer: writableBuffer | flushSinkWritableBuffer,
+  elementValue: elementValue,
+  constantPool: PoolRegister,
+  customAssertInfoType: customAssertInfoType
+): void {
+  const { tag } = elementValue;
+  const tagIndex = Object.keys(tagMap).find(
+    (key) => tagMap[key as unknown as keyof typeof tagMap] === tag
+  );
+  if (!tagIndex) {
+    throw new unknownError(`Unknown element value tag ${tag}`);
+  }
+  buffer.push(Number(tagIndex));
+  switch (tag) {
+    case "@": {
+      writeAnnotation(
+        buffer,
+        elementValue.value,
+        constantPool,
+        customAssertInfoType
+      );
+      break;
+    }
+
+    case "B":
+    case "C":
+    case "I":
+    case "S":
+    case "Z": {
+      const index = constantPool.registerEntry(elementValue.value);
+      customAssertInfoType(3, index, elementValue.value);
+      buffer.writeUnsignedInt(index, 2);
+      break;
+    }
+
+    case "D": {
+      const index = constantPool.registerEntry(elementValue.value);
+      customAssertInfoType(6, index, elementValue.value);
+      buffer.writeUnsignedInt(index, 2);
+      break;
+    }
+
+    case "F": {
+      const index = constantPool.registerEntry(elementValue.value);
+      customAssertInfoType(4, index, elementValue.value);
+      buffer.writeUnsignedInt(index, 2);
+      break;
+    }
+
+    case "J": {
+      const index = constantPool.registerEntry(elementValue.value);
+      customAssertInfoType(5, index, elementValue.value);
+      buffer.writeUnsignedInt(index, 2);
+      break;
+    }
+
+    case "[": {
+      const values = elementValue.values;
+      buffer.writeUnsignedInt(values.length, 2);
+      for (const value of values) {
+        writeElementValue(buffer, value, constantPool, customAssertInfoType);
+      }
+      break;
+    }
+
+    case "c":
+    case "s": {
+      const utf8Index = constantPool.registerEntry(elementValue.value);
+      customAssertInfoType(1, utf8Index, elementValue.value);
+      buffer.writeUnsignedInt(utf8Index, 2);
+      break;
+    }
+
+    case "e": {
+      const typeNameIndex = constantPool.registerEntry(elementValue.typeName);
+      customAssertInfoType(1, typeNameIndex, elementValue.typeName);
+      buffer.writeUnsignedInt(typeNameIndex, 2);
+      const constNameIndex = constantPool.registerEntry(elementValue.constName);
+      customAssertInfoType(1, constNameIndex, elementValue.constName);
+      buffer.writeUnsignedInt(constNameIndex, 2);
+      break;
+    }
+    default: {
+      throw new unknownError(`Unknown element value tag ${tag}`);
+    }
+  }
+}
 export const tagMap = {
   64: "@",
   66: "B",
@@ -252,6 +466,23 @@ export function readAnnotation(
     };
   }
   return { type, elementValuePairs };
+}
+export function writeAnnotation(
+  buffer: writableBuffer | flushSinkWritableBuffer,
+  annotation: annotation,
+  constantPool: PoolRegister,
+  customAssertInfoType: customAssertInfoType
+): void {
+  const typeIndex = constantPool.registerEntry(annotation.type);
+  customAssertInfoType(1, typeIndex, annotation.type);
+  buffer.writeUnsignedInt(typeIndex, 2);
+  buffer.writeUnsignedInt(annotation.elementValuePairs.length, 2);
+  for (const pair of annotation.elementValuePairs) {
+    const elementNameIndex = constantPool.registerEntry(pair.elementName);
+    customAssertInfoType(1, elementNameIndex, pair.elementName);
+    buffer.writeUnsignedInt(elementNameIndex, 2);
+    writeElementValue(buffer, pair.value, constantPool, customAssertInfoType);
+  }
 }
 const targetTypeMappings = {
   0x00: "typeParameterTarget",
@@ -461,11 +692,126 @@ export function readTypeAnnotation(
     ...readAnnotation(buffer, constantPool, customAssertInfoType),
   };
 }
+export function writeTypeAnnotation(
+  buffer: writableBuffer | flushSinkWritableBuffer,
+  typeAnnotation: typeAnnotation,
+  constantPool: PoolRegister,
+  customAssertInfoType: customAssertInfoType,
+  enclosingStructure:
+    | "ClassFile"
+    | "method_info"
+    | "field_info"
+    | "record_component_info"
+    | "Code"
+): void {
+  const { targetInfo, path } = typeAnnotation;
+  const targetTypeCode = Object.keys(targetTypeMappings).find(
+    (key) =>
+      targetTypeMappings[key as unknown as keyof typeof targetTypeMappings] ===
+      targetInfo.targetType
+  );
+  if (!targetTypeCode) {
+    throw new unknownError(
+      `Unknown target type ${targetInfo.targetType} in writeTypeAnnotation`
+    );
+  }
+  if (
+    !targetTypeAllowedStructuresMappings[
+      targetTypeCode as unknown as keyof typeof targetTypeAllowedStructuresMappings
+    ].includes(enclosingStructure)
+  ) {
+    throw new disallowedError(
+      `Disallowed target type ${targetInfo.targetType} (${targetTypeCode}) for structure ${enclosingStructure}`
+    );
+  }
+  buffer.push(Number(targetTypeCode));
+  switch (targetInfo.targetType) {
+    case "typeParameterTarget": {
+      buffer.push(targetInfo.typeParameterIndex);
+      break;
+    }
+    case "supertypeTarget": {
+      buffer.writeUnsignedInt(targetInfo.supertypeIndex, 2);
+      break;
+    }
+    case "typeParameterBoundTarget": {
+      buffer.push(targetInfo.typeParameterIndex);
+      buffer.push(targetInfo.boundIndex);
+      break;
+    }
+    case "emptyTarget": {
+      // Nothing to do
+      break;
+    }
+    case "formalParameterTarget": {
+      buffer.push(targetInfo.formalParameterIndex);
+      break;
+    }
+    case "throwsTarget": {
+      buffer.writeUnsignedInt(targetInfo.throwsTypeIndex, 2);
+      break;
+    }
+    case "localvarTarget": {
+      const table = targetInfo.table;
+      buffer.writeUnsignedInt(table.length, 2);
+      for (const entry of table) {
+        buffer.writeUnsignedInt(entry.startPc, 2);
+        buffer.writeUnsignedInt(entry.length, 2);
+        buffer.writeUnsignedInt(entry.index, 2);
+      }
+      break;
+    }
+    case "catchTarget": {
+      buffer.writeUnsignedInt(targetInfo.exceptionTableIndex, 2);
+      break;
+    }
+    case "offsetTarget": {
+      buffer.writeUnsignedInt(targetInfo.offset, 2);
+      break;
+    }
+    case "typeArgumentTarget": {
+      buffer.writeUnsignedInt(targetInfo.offset, 2);
+      buffer.push(targetInfo.typeArgumentIndex);
+      break;
+    }
+    default: {
+      // Interpreted as never
+      throw new unknownError(
+        // @ts-ignore
+        `Unknown target type ${targetInfo.targetType} in writeTypeAnnotation`
+      );
+    }
+  }
+  buffer.push(path.length);
+  for (const entry of path) {
+    if (
+      !(
+        entry.typePathKind === 0 ||
+        entry.typePathKind === 1 ||
+        entry.typePathKind === 2 ||
+        entry.typePathKind === 3
+      )
+    ) {
+      throw new unknownError(
+        `Unknown type path kind ${entry.typePathKind} in writeTypeAnnotation`
+      );
+    }
+    if (entry.typePathKind !== 3 && entry.typeArgumentIndex !== 0) {
+      // Interpreted as never
+      throw new disallowedError(
+        // @ts-ignore
+        `Type argument index must be zero if type path kind is not 3 (got ${entry.typePathKind}) in writeTypeAnnotation`
+      );
+    }
+    buffer.push(entry.typePathKind);
+    buffer.push(entry.typeArgumentIndex);
+  }
+}
 export function assertAttributeType<
   allowedNames extends
-    | attribute["name"]
-    | attribute["name"][]
-    | readonly attribute["name"][]
+    | attribute["name"]["value"]
+    | attribute["name"]["value"][]
+    | readonly attribute["name"]["value"][]
 >(
   allowedNames: allowedNames,
   entry: attribute,
@@ -473,19 +819,21 @@ export function assertAttributeType<
 ): asserts entry is Extract<
   attribute,
   {
-    name: makeMutable<allowedNames> extends any[]
-      ? makeMutable<allowedNames>[number]
-      : makeMutable<allowedNames>;
+    name: utf8Info & {
+      value: makeMutable<allowedNames> extends any[]
+        ? makeMutable<allowedNames>[number]
+        : makeMutable<allowedNames>;
+    };
   }
 > {
   if (Array.isArray(allowedNames)) {
     if (allowedNames.length === 0) {
       throw new Error("Wow. Just wow. (Invalid function use)");
     }
-    if (!allowedNames.includes(entry.name)) {
+    if (!allowedNames.includes(entry.name.value)) {
       throw new disallowedError(
         `${structName} has invalild attribute with name ${
-          entry.name
+          entry.name.value
         } but allowed name${
           allowedNames.length === 1
             ? ` is ${allowedNames[0]}`
@@ -504,7 +852,7 @@ export function assertAttributeType<
       );
     }
   } else {
-    if (!(entry.name === allowedNames)) {
+    if (!(entry.name.value === allowedNames)) {
       throw new invalidPointerError(
         `${structName} has invalild attribute with name ${entry.name} but allowed name is ${allowedNames}`
       );

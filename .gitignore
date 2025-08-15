@@ -134,3 +134,6 @@ docs/
 
 # Vscode config
 .vscode/
+
+# Test files
+testOutput/

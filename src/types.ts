@@ -1,44 +1,7 @@
+import { Expand } from "@chickenjdk/common";
 import { attribute, getLegalAttributes } from "./attributes/types";
 import type { classInfo, PoolType, utf8Info } from "./constantPool/types";
 
-/**
- * @private
- */
-type IsSpecificNumber<T> = number extends T
-  ? false
-  : T extends number
-  ? true
-  : false;
-/**
- * @private
- */
-type ArrayClone<
-  T extends any[],
-  Ignore = never,
-  N extends any[] = []
-> = IsSpecificNumber<T["length"]> extends true
-  ? T["length"] extends 0
-    ? N
-    : T extends [infer item, ...infer rest]
-    ? ArrayClone<rest, Ignore, [...N, Expand<item, Ignore, false>]>
-    : never
-  : Expand<T[number], Ignore, false>[];
-type and<A, B> = A extends true ? (B extends true ? true : false) : false;
-type not<T> = T extends true ? false : true;
-export type Expand<O, Ignore = never, DontIgnoreTop = true> = and<
-  O extends Ignore ? true : false,
-  not<DontIgnoreTop>
-> extends true
-  ? O
-  : O extends any[]
-  ? ArrayClone<O, Ignore>
-  : {
-      [K in keyof O]: O[K] extends string | number | symbol
-        ? O[K]
-        : O[K] extends any[]
-        ? ArrayClone<O[K], Ignore>
-        : Expand<O[K], Ignore, false>;
-    };
 export type flagsType =
   | accessFlags
   | innerClassAccessFlags
@@ -143,14 +106,14 @@ export type fields = Expand<
 >;
 // Methods type
 export type methods = Expand<
-{
-  accessFlags: methodsAccessFlags;
-  name: utf8Info;
-  descriptor: utf8Info;
-  attributes: getLegalAttributes<"method_info">;
-}[],
-expansionIgnoreList
-> ;
+  {
+    accessFlags: methodsAccessFlags;
+    name: utf8Info;
+    descriptor: utf8Info;
+    attributes: getLegalAttributes<"method_info">;
+  }[],
+  expansionIgnoreList
+>;
 // Classfile type
 export type classFile = {
   minorVersion: number;
@@ -163,4 +126,4 @@ export type classFile = {
   fields: fields;
   methods: methods;
   attributes: attribute[];
-}
+};

@@ -36,6 +36,10 @@ export const invalidPointerError = createClassifyedError(
   "Invalid pointer",
   classFileParseError
 );
+export const constantPoolUnknownTagError = createClassifyedError(
+  "Constant pool",
+  unknownTagError
+);
 // Attributes stuff
 export const unknownAttributeError = createClassifyedError(
   "Unknown attribute",
@@ -48,5 +52,9 @@ export const unknownBytecodeOpcodeError = createClassifyedError(
 );
 export const unwidenableOpcodeError = createClassifyedError(
   "Opcode does not support the wide modifyer",
+  disallowedError
+);
+export const disallowedLengthError = createClassifyedError(
+  "Disallowed length",
   disallowedError
 );

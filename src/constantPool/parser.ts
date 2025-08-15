@@ -1,10 +1,6 @@
 import type { readableBuffer } from "@chickenjdk/byteutils";
-import { unknownTagError } from "../errors";
-import {
-  assertInRange,
-  prioritizedHook,
-  createClassifyedError,
-} from "@chickenjdk/common";
+import { constantPoolUnknownTagError, unknownTagError } from "../errors";
+import { assertInRange, prioritizedHook } from "@chickenjdk/common";
 import { assertInfoType as __assertInfoType_old__ } from "../common";
 import { findInfoTypeByTag, poolTags, PoolType } from "./types";
 function assertInfoType<expectedTag extends poolTags | poolTags[]>(
@@ -94,11 +90,13 @@ export function readConstantPool(buffer: readableBuffer) {
           tag,
           index: poolIndex,
         };
+        pool[++poolIndex] = { tag: 0, index: poolIndex }; // 8 byte constants take up two entries
         break;
       }
       case 6: {
         // double
         pool[poolIndex] = { value: buffer.readDouble(), tag, index: poolIndex };
+        pool[++poolIndex] = { tag: 0, index: poolIndex }; // 8 byte constants take up two entries
         break;
       }
       case 12: {
@@ -135,7 +133,7 @@ export function readConstantPool(buffer: readableBuffer) {
         assertInRange(
           referenceKind,
           [1, 9],
-          new (createClassifyedError("Constant pool", unknownTagError))(
+          new constantPoolUnknownTagError(
             `Unknown reference kind ${referenceKind} in methodHandle`
           )
         );

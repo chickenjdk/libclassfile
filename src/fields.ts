@@ -1,4 +1,8 @@
-import type { readableBuffer } from "@chickenjdk/byteutils";
+import type {
+  readableBuffer,
+  writableBuffer,
+  writableBufferBase,
+} from "@chickenjdk/byteutils";
 import type { findInfoTypeByTag, poolTags } from "./constantPool/types";
 import type { PoolType } from "./constantPool/types";
 import {
@@ -10,6 +14,15 @@ import { getLegalAttributes } from "./attributes/types";
 import { readAttribute } from "./attributes/parser";
 import { assertAttributeType } from "./attributes/helpers";
 import { flags, fields } from "./types";
+import { writeAttribute } from "./attributes/writer";
+import { flushSinkWritableBuffer } from "./customBuffers";
+import { PoolRegister } from "./constantPool/writer";
+/**
+ * Generate a description for a field entry.
+ * @param index The index of the field
+ * @param flags The flags of the field
+ * @returns The string description of the field entry
+ */
 function makeDescription(index: number, flags: flags): string {
   return `Field entry with index ${index} and flags ${Object.entries(flags)
     .filter(([_key, value]) => value)
@@ -54,6 +67,20 @@ function readFlags(buffer: readableBuffer): flags {
     isEnum,
   };
 }
+function writeFlags(buffer: writableBufferBase, flags: flags): void {
+  let flagValue = 0;
+  if (flags.isPublic) flagValue |= 0x0001;
+  if (flags.isPrivate) flagValue |= 0x0002;
+  if (flags.isProtected) flagValue |= 0x0004;
+  if (flags.isStatic) flagValue |= 0x0008;
+  if (flags.isFinal) flagValue |= 0x0010;
+  if (flags.isVolatile) flagValue |= 0x0040;
+  if (flags.isTransient) flagValue |= 0x0080;
+  if (flags.isSynthetic) flagValue |= 0x1000;
+  if (flags.isEnum) flagValue |= 0x4000;
+  buffer.writeUnsignedInt(2, flagValue);
+}
+
 export function readFields(
   buffer: readableBuffer,
   constantPool: PoolType,
@@ -93,4 +120,39 @@ export function readFields(
     };
   }
   return fields;
+}
+
+export function writeFields(
+  buffer: writableBuffer | flushSinkWritableBuffer,
+  fields: fields,
+  constantPool: PoolRegister
+): void {
+  buffer.writeUnsignedInt(fields.length, 2);
+  for (let index = 0; index < fields.length; index++) {
+    const field = fields[index];
+    writeFlags(buffer, field.flags);
+    const nameIndex = constantPool.registerEntry(field.name);
+    assertInfoType(1, nameIndex, field.name, [index, field.flags]);
+    buffer.writeUnsignedInt(nameIndex, 2);
+    const descriptorIndex = constantPool.registerEntry(field.descriptor);
+    assertInfoType(1, descriptorIndex, field.descriptor, [index, field.flags]);
+    buffer.writeUnsignedInt(field.descriptor.index, 2);
+    // Write attributes
+    buffer.writeUnsignedInt(field.attributes.length, 2);
+    for (const attribute of field.attributes) {
+      assertAttributeType(
+        predefinedValidClassFileAttributesMap.field_info,
+        attribute,
+        makeDescription(index, field.flags)
+      );
+      writeAttribute(
+        buffer,
+        attribute,
+        (expectedTag, entryIndex, entry) =>
+          assertInfoType(expectedTag, entryIndex, entry, [index, field.flags]),
+        "field_info",
+        constantPool
+      );
+    }
+  }
 }

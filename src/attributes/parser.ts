@@ -3,6 +3,7 @@ import {
   classInfo,
   loadableTags,
   moduleInfo,
+  nameAndTypeInfo,
   packageInfo,
   PoolType,
   utf8Info,
@@ -15,7 +16,7 @@ import {
   readModuleAttributeExportsFlags,
   readModuleAttributeOpensFlags,
 } from "../accessFlags";
-import { log } from "@chickenjdk/common";
+import { log, Narrowest } from "@chickenjdk/common";
 import {
   annotation,
   attribute,
@@ -30,6 +31,12 @@ import {
   methodParameters,
   module,
   record,
+  runtimeInvisibleAnnotations,
+  runtimeInvisibleParameterAnnotations,
+  runtimeInvisibleTypeAnnotations,
+  runtimeVisibleAnnotations,
+  runtimeVisibleParameterAnnotations,
+  runtimeVisibleTypeAnnotations,
   typeAnnotation,
 } from "./types";
 import {
@@ -42,6 +49,13 @@ import {
 import { predefinedValidClassFileAttributesMap } from "../common";
 import { disallowedError } from "../errors";
 import { parseBytecode } from "../bytecode/parse";
+import { parser } from "../signature";
+import {
+  parseClassSignature,
+  parseFieldDescriptor,
+  parseFieldTypeSignature,
+  parseMethodTypeSignature,
+} from "../signature/parser";
 export function readAttribute(
   allBuffer: readableBuffer,
   constantPool: PoolType,
@@ -54,8 +68,9 @@ export function readAttribute(
     | "Code"
 ): attribute {
   const attributeNameIndex = allBuffer.readUnsignedInt(2);
-  const attributeNameEntry = constantPool[attributeNameIndex];
-  customAssertInfoType(1, attributeNameIndex, attributeNameEntry);
+  const _attributeNameEntry = constantPool[attributeNameIndex];
+  customAssertInfoType(1, attributeNameIndex, _attributeNameEntry);
+  const attributeNameEntry = _attributeNameEntry as attribute["name"];
   const { value: name } = attributeNameEntry;
   const attributeLength = allBuffer.readUnsignedInt(4);
   // Read ENTIRE attribute just in case not all of it is read for some reason sutch as the attribute not being supported and the error is ignored
@@ -74,14 +89,18 @@ export function readAttribute(
       const constantValue = constantPool[constantValueIndex];
       customAssertInfoType([3, 4, 5, 6, 8], constantValueIndex, constantValue);
       check();
-      return { name, value: constantValue };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        value: constantValue,
+      };
     }
     case "Code": {
       // TODO: implement type checking
       const maxStack = buffer.readUnsignedInt(2);
       const maxLocals = buffer.readUnsignedInt(2);
       const codeLength = buffer.readUnsignedInt(4);
-      const code = parseBytecode(buffer.readReadableBuffer(codeLength));
+      const code = parseBytecode(buffer.readReadableBuffer(codeLength), constantPool);
       const exceptionTableLength = buffer.readUnsignedInt(2);
       let exceptionTable: exceptionTable = [];
       for (let index = 0; index < exceptionTableLength; index++) {
@@ -114,12 +133,21 @@ export function readAttribute(
         attributes[index] = entry;
       }
       check();
-      return { name, maxStack, maxLocals, code, exceptionTable, attributes };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        maxStack,
+        maxLocals,
+        code,
+        exceptionTable,
+        attributes,
+      };
     }
     case "StackMapTable": {
       const numberOfEntries = buffer.readUnsignedInt(2);
       return {
-        name,
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
         entries: readStackMapFrames(
           numberOfEntries,
           buffer,
@@ -138,7 +166,11 @@ export function readAttribute(
         exeptions[index] = entry;
       }
       check();
-      return { name, exeptions };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        exeptions,
+      };
     }
     case "InnerClasses": {
       const numberOfClasses = buffer.readUnsignedInt(2);
@@ -160,33 +192,42 @@ export function readAttribute(
         const innerClassAccessFlags = readInnerClassAccessFlags(buffer);
         classes[index] = {
           innerClassInfo,
-          // @ts-ignore
-          outerClassInfo,
-          // @ts-ignore
-          innerName,
+          outerClassInfo: outerClassInfo as classInfo | undefined,
+          innerName: innerName as utf8Info | undefined,
           innerClassAccessFlags,
         };
       }
       check();
-      return { name, classes };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        classes,
+      };
     }
     case "EnclosingMethod": {
       const classIndex = buffer.readUnsignedInt(2);
       const classValue = constantPool[classIndex];
       customAssertInfoType(7, classIndex, classValue);
       const methodIndex = buffer.readUnsignedInt(2);
-      const method = constantPool[methodIndex];
+      const method: PoolType[number] = constantPool[methodIndex];
       if (methodIndex !== 0) {
         customAssertInfoType(12, methodIndex, method);
       }
       check();
       // Nothing to worry about, typescript does not know that if methodIndex === 0 then method === undefined (With a range type from 1 to 65535 it would most likely work)
-      // @ts-ignore
-      return { name, class: classValue, method };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        class: classValue,
+        method: method as nameAndTypeInfo | undefined,
+      };
     }
     case "Synthetic": {
       check();
-      return { name };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+      };
     }
     case "Signature": {
       const signatureIndex = buffer.readUnsignedInt(2);
@@ -194,19 +235,36 @@ export function readAttribute(
       customAssertInfoType(1, signatureIndex, signature);
       check();
 
-      return { name, signature };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        signature:
+          enclosingStructure === "ClassFile"
+            ? parseClassSignature(signature.value)
+            : enclosingStructure === "method_info"
+            ? parseMethodTypeSignature(signature.value)
+            : parseFieldTypeSignature(signature.value),
+      };
     }
     case "SourceFile": {
       const sourcefileIndex = buffer.readUnsignedInt(2);
       const sourcefile = constantPool[sourcefileIndex];
       customAssertInfoType(1, sourcefileIndex, sourcefile);
       check();
-      return { name, sourcefile };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        sourcefile,
+      };
     }
     case "SourceDebugExtension": {
       const debugExtension = buffer.readString(buffer.buffer.length, true);
       check();
-      return { name, debugExtension };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        debugExtension,
+      };
     }
     case "LineNumberTable": {
       const lineNumberTableLength = buffer.readUnsignedInt(2);
@@ -217,7 +275,11 @@ export function readAttribute(
         lineNumberTable[index] = { startPc, lineNumber };
       }
       check();
-      return { name, lineNumberTable };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        lineNumberTable,
+      };
     }
     case "LocalVariableTable": {
       const localVariableTableLength = buffer.readUnsignedInt(2);
@@ -232,10 +294,20 @@ export function readAttribute(
         const descriptor = constantPool[descriptorIndex];
         customAssertInfoType(1, descriptorIndex, descriptor);
         const index = buffer.readUnsignedInt(2);
-        localVariableTable.push({ startPc, length, name, descriptor, index });
+        localVariableTable.push({
+          startPc,
+          length,
+          name,
+          descriptor: parseFieldDescriptor(descriptor.value),
+          index,
+        });
       }
       check();
-      return { name, localVariableTable };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        localVariableTable,
+      };
     }
     case "LocalVariableTypeTable": {
       const localVariableTypeTableLength = buffer.readUnsignedInt(2);
@@ -255,16 +327,23 @@ export function readAttribute(
           startPc,
           length,
           name,
-          signature,
+          signature: parseFieldTypeSignature(signature.value),
           index,
         });
       }
       check();
-      return { name, localVariableTypeTable };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        localVariableTypeTable,
+      };
     }
     case "Deprecated": {
       check();
-      return { name };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+      };
     }
     case "RuntimeVisibleAnnotations":
     case "RuntimeInvisibleAnnotations": {
@@ -278,21 +357,35 @@ export function readAttribute(
         );
       }
       check();
-      return { name, annotations };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        annotations,
+      } as runtimeVisibleAnnotations | runtimeInvisibleAnnotations;
     }
     case "RuntimeVisibleParameterAnnotations":
     case "RuntimeInvisibleParameterAnnotations": {
-      const numParameters = buffer.readUnsignedInt(2);
-      const parameterAnnotations: annotation[] = [];
+      const numParameters = buffer.shift();
+      const parameterAnnotations: annotation[][] = [];
       for (let index = 0; index < numParameters; index++) {
-        parameterAnnotations[index] = readAnnotation(
-          buffer,
-          constantPool,
-          customAssertInfoType
-        );
+        parameterAnnotations[index] = [];
+        const numAnnotations = buffer.readUnsignedInt(2);
+        for (let index2 = 0; index2 < numAnnotations; index2++) {
+          parameterAnnotations[index][index2] = readAnnotation(
+            buffer,
+            constantPool,
+            customAssertInfoType
+          );
+        }
       }
       check();
-      return { name, parameterAnnotations };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        parameterAnnotations,
+      } as
+        | runtimeVisibleParameterAnnotations
+        | runtimeInvisibleParameterAnnotations;
     }
     case "RuntimeVisibleTypeAnnotations":
     case "RuntimeInvisibleTypeAnnotations": {
@@ -306,7 +399,11 @@ export function readAttribute(
           enclosingStructure
         );
       }
-      return { name, annotations };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        annotations,
+      } as runtimeVisibleTypeAnnotations | runtimeInvisibleTypeAnnotations;
     }
     case "AnnotationDefault": {
       const defaultValue = readElementValue(
@@ -314,7 +411,11 @@ export function readAttribute(
         constantPool,
         customAssertInfoType
       );
-      return { name, defaultValue };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        defaultValue,
+      };
     }
     case "BootstrapMethods": {
       const numBootstrapMethods = buffer.readUnsignedInt(2);
@@ -333,6 +434,11 @@ export function readAttribute(
         }
         bootstrapMethods[index] = { bootstrapMethod, bootstrapArguments };
       }
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        bootstrapMethods,
+      };
     }
     case "MethodParameters": {
       const parametersCount = buffer.shift();
@@ -346,6 +452,11 @@ export function readAttribute(
         const accessFlags = readMethodParametersAccessFlags(buffer);
         parameters[index] = { name: name as utf8Info | undefined, accessFlags };
       }
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        parameters,
+      };
     }
     case "Module": {
       const moduleNameIndex = buffer.readUnsignedInt(2);
@@ -441,7 +552,8 @@ export function readAttribute(
         provides[index] = { provides: providesClass, providesWith };
       }
       return {
-        name,
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
         moduleName,
         moduleFlags,
         moduleVersion,
@@ -461,19 +573,31 @@ export function readAttribute(
         customAssertInfoType(20, packageIndex, Package);
         packages[index] = Package;
       }
-      return { name, packages };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        packages,
+      };
     }
     case "ModuleMainClass": {
       const mainClassIndex = buffer.readUnsignedInt(2);
       const mainClass = constantPool[mainClassIndex];
       customAssertInfoType(7, mainClassIndex, mainClass);
-      return { name, mainClass };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        mainClass,
+      };
     }
     case "NestHost": {
       const hostClassIndex = buffer.readUnsignedInt(2);
       const hostClass = constantPool[hostClassIndex];
       customAssertInfoType(7, hostClassIndex, hostClass);
-      return { name, hostClass };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        hostClass,
+      };
     }
     case "NestMembers": {
       const numberOfClasses = buffer.readUnsignedInt(2);
@@ -484,7 +608,11 @@ export function readAttribute(
         customAssertInfoType(7, classIndex, classValue);
         classes[index] = classValue;
       }
-      return { name, classes };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        classes,
+      };
     }
     case "Record": {
       const componentsCount = buffer.readUnsignedInt(2);
@@ -514,7 +642,11 @@ export function readAttribute(
         }
         components[index] = { name, descriptor, attributes };
       }
-      return { name, components };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        components,
+      };
     }
     case "PermittedSubclasses": {
       const numberOfClasses = buffer.readUnsignedInt(2);
@@ -525,14 +657,15 @@ export function readAttribute(
         customAssertInfoType(7, classIndex, classValue);
         classes[index] = classValue;
       }
-      return { name, classes };
+      return {
+        name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
+        known: true,
+        classes,
+      };
     }
     default: {
-      log(
-        "verbose",
-        `Unknown/unimplemented attribute ${attributeNameEntry.value}`
-      );
-      return { name };
+      log("log", `Unknown/unimplemented attribute ${attributeNameEntry.value}`);
+      return { name: attributeNameEntry, known: false, rawData: buffer.buffer };
     }
   }
 }

@@ -1,10 +1,16 @@
-const { readClassFile, parseBytecode } = require("./");
-const { readFileSync } = require("fs");
-const { readableBuffer } = require("@chickenjdk/byteutils");
+const {
+  readClassFile,
+  parseBytecode,
+  writeBytecode,
+  writeClassFile,
+} = require("./");
+const { readFileSync, mkdirSync, writeFileSync } = require("fs");
+const { readableBuffer, writableBuffer } = require("@chickenjdk/byteutils");
 const testFile = readFileSync("./main.class");
 const parsedFile = readClassFile(new readableBuffer(testFile));
 console.log(JSON.stringify(parsedFile));
-
+//return;
+/*
 const testBytecodeCases = [
   {
     label: "nop (b)",
@@ -58,9 +64,7 @@ const testBytecodeCases = [
     label: "tableswitch (special, padded to 4 bytes)",
     bytes: Uint8Array.from([
       0xaa, // tableswitch
-      0x00,
-      0x00,
-      0x00, // padding (3 bytes)
+      // padding not needed
       0xff,
       0xff,
       0xff,
@@ -87,9 +91,7 @@ const testBytecodeCases = [
     label: "lookupswitch (special, padded to 4 bytes)",
     bytes: Uint8Array.from([
       0xab, // lookupswitch
-      0x00,
-      0x00, 
-      0x00, // padding (3 bytes)
+      // padding not needed
       0x00,
       0x00,
       0x00,
@@ -117,9 +119,20 @@ const testBytecodeCases = [
     ]),
   },
 ];
+const result = []
 for (const test of testBytecodeCases) {
   console.log(`Testing: ${test.label}`);
   const bytecodeBuffer = new readableBuffer(test.bytes);
   const instructions = parseBytecode(bytecodeBuffer);
   console.log(JSON.stringify(instructions, null, 2));
+  result.push(...instructions)
 }
+
+console.log(`Testing all of them together, parse/assemble/parse`);
+const buffer = new writableBuffer()
+writeBytecode(buffer, result);
+console.log(JSON.stringify(parseBytecode(new readableBuffer(buffer.buffer))));*/
+console.log("Reassembling the main.class");
+mkdirSync("./testFiles");
+const assembledFile = writeClassFile(parsedFile);
+writeFileSync("./testFiles/main.class", assembledFile.buffer);

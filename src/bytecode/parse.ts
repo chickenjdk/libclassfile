@@ -1,16 +1,18 @@
-import { unwidenableOpcodeError, noOperandError } from "../errors";
-import { BytecodeInstructionType, opcodeMnemonics } from "./types";
+import { PoolType } from "../constantPool/types";
+import { unwidenableOpcodeError, noOperandError, refError } from "../errors";
+import { BytecodeInstruction, opcodeMnemonics } from "./types";
 import { readableBuffer } from "@chickenjdk/byteutils";
 
 export function parseBytecode(
-  bytecodeBuffer: readableBuffer
-): BytecodeInstructionType[] {
-  const instructions: BytecodeInstructionType[] = [];
+  bytecodeBuffer: readableBuffer,
+  constantPool: PoolType
+): BytecodeInstruction[] {
+  const instructions: BytecodeInstruction[] = [];
   let wideMode = false;
   const orgiginalPosition = bytecodeBuffer._offset;
   while (bytecodeBuffer.length > 0) {
     // Must be aligned relitive to the start of the bytecode
-    const pos = bytecodeBuffer._offset-orgiginalPosition;
+    const pos = bytecodeBuffer._offset - orgiginalPosition;
     const { wideFormat, format, mnemonic, opcode } =
       opcodeMnemonics[bytecodeBuffer.shift()];
     if (wideMode && (wideFormat === null || wideFormat === undefined)) {
@@ -43,6 +45,7 @@ export function parseBytecode(
             mnemonic: "tableswitch",
             operands: [defaultOffset, low, high, jumpOffsets],
             wide: false,
+            ctx: {},
           });
         }
         break;
@@ -67,6 +70,7 @@ export function parseBytecode(
             mnemonic: "lookupswitch",
             operands: [defaultOffset, matchOffsetPairs],
             wide: false,
+            ctx: {},
           });
         }
         break;
@@ -80,7 +84,7 @@ export function parseBytecode(
         >) {
           switch (char) {
             case "b":
-              operands.push(opcode); // b = the opcode
+              //operands.push(opcode); // b = the opcode
               break;
             case "c": // unsigned byte
             case "k": // constant pool index (u1)
@@ -117,6 +121,39 @@ export function parseBytecode(
               );
           }
         }
+        // Kind of a mess, clean up
+        const kCount: number = bytecodeFormat
+          ?.split("")
+          .filter((value) => value === "k").length as unknown as number;
+        const countedChars = "ckisunloJ".split("");
+        const cleanFormat = bytecodeFormat
+          ?.split("")
+          .filter((value) =>
+            countedChars.includes(value)
+          ) as unknown as string[];
+
+        const ctx: PoolType = {};
+        if (kCount === 1) {
+          const poolIndex = operands[cleanFormat.indexOf("k")] as number;
+          const poolEntry = constantPool[poolIndex];
+          if (poolEntry === undefined) {
+            throw new refError(
+              "Bytecode refered to non-exsistent constant pool entry"
+            );
+          }
+          ctx[poolIndex] = poolEntry;
+        } else if (kCount === 2) {
+          const poolIndex =
+            ((operands[cleanFormat.indexOf("k")] as number) << 8) |
+            (operands[cleanFormat.indexOf("k") + 1] as number);
+          const poolEntry = constantPool[poolIndex];
+          if (poolEntry === undefined) {
+            throw new refError(
+              "Bytecode refered to non-exsistent constant pool entry"
+            );
+          }
+          ctx[poolIndex] = poolEntry;
+        }
         instructions.push({
           pos,
           opcode,
@@ -124,6 +161,7 @@ export function parseBytecode(
           // @ts-ignore
           operands,
           wide: wideMode,
+          ctx,
         });
         wideMode = false;
         break;

@@ -1,7 +1,11 @@
-import { makeMutable } from "@chickenjdk/common";
-import { Expand, expansionIgnoreListSafe } from "../types";
+import { makeMutable, Expand } from "@chickenjdk/common";
+import {  expansionIgnoreListSafe } from "../types";
 
 type addIndex<T> = T extends any ? T & { index: number } : never;
+export type unusableInfo = Expand<
+  addIndex<{ tag: 0 }>,
+  expansionIgnoreListSafe
+>;
 export type classInfo = Expand<
   addIndex<{ name: utf8Info; tag: 7 }>,
   expansionIgnoreListSafe
@@ -95,6 +99,7 @@ export type packageInfo = Expand<
 
 export type PoolType = {
   [key in number]:
+    | unusableInfo
     | classInfo
     | refInfo
     | stringInfo
