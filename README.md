@@ -194,7 +194,8 @@ Parsed class file of source code with this package
       "descriptor": { "value": "()V", "tag": 1, "index": 6 },
       "attributes": [
         {
-          "name": "Code",
+          "name": { "value": "Code", "tag": 1, "index": 23 },
+          "known": true,
           "maxStack": 1,
           "maxLocals": 1,
           "code": [
@@ -202,28 +203,52 @@ Parsed class file of source code with this package
               "pos": 0,
               "opcode": 42,
               "mnemonic": "aload_0",
-              "operands": [42],
-              "wide": false
+              "operands": [],
+              "wide": false,
+              "ctx": {}
             },
             {
               "pos": 1,
               "opcode": 183,
               "mnemonic": "invokespecial",
-              "operands": [183, 0, 1],
-              "wide": false
+              "operands": [0, 1],
+              "wide": false,
+              "ctx": {
+                "1": {
+                  "class": {
+                    "name": {
+                      "value": "java/lang/Object",
+                      "tag": 1,
+                      "index": 4
+                    },
+                    "tag": 7,
+                    "index": 2
+                  },
+                  "nameAndType": {
+                    "name": { "value": "<init>", "tag": 1, "index": 5 },
+                    "descriptor": { "value": "()V", "tag": 1, "index": 6 },
+                    "tag": 12,
+                    "index": 3
+                  },
+                  "tag": 10,
+                  "index": 1
+                }
+              }
             },
             {
               "pos": 4,
               "opcode": 177,
               "mnemonic": "return",
-              "operands": [177],
-              "wide": false
+              "operands": [],
+              "wide": false,
+              "ctx": {}
             }
           ],
           "exceptionTable": [],
           "attributes": [
             {
-              "name": "LineNumberTable",
+              "name": { "value": "LineNumberTable", "tag": 1, "index": 24 },
+              "known": true,
               "lineNumberTable": [{ "startPc": 0, "lineNumber": 1 }]
             }
           ]
@@ -253,7 +278,8 @@ Parsed class file of source code with this package
       },
       "attributes": [
         {
-          "name": "Code",
+          "name": { "value": "Code", "tag": 1, "index": 23 },
+          "known": true,
           "maxStack": 2,
           "maxLocals": 1,
           "code": [
@@ -261,35 +287,98 @@ Parsed class file of source code with this package
               "pos": 0,
               "opcode": 178,
               "mnemonic": "getstatic",
-              "operands": [178, 0, 7],
-              "wide": false
+              "operands": [0, 7],
+              "wide": false,
+              "ctx": {
+                "7": {
+                  "class": {
+                    "name": {
+                      "value": "java/lang/System",
+                      "tag": 1,
+                      "index": 10
+                    },
+                    "tag": 7,
+                    "index": 8
+                  },
+                  "nameAndType": {
+                    "name": { "value": "out", "tag": 1, "index": 11 },
+                    "descriptor": {
+                      "value": "Ljava/io/PrintStream;",
+                      "tag": 1,
+                      "index": 12
+                    },
+                    "tag": 12,
+                    "index": 9
+                  },
+                  "tag": 9,
+                  "index": 7
+                }
+              }
             },
             {
               "pos": 3,
               "opcode": 18,
               "mnemonic": "ldc",
-              "operands": [18, 13],
-              "wide": false
+              "operands": [13],
+              "wide": false,
+              "ctx": {
+                "13": {
+                  "value": {
+                    "value": "Hello, world! Test test!",
+                    "tag": 1,
+                    "index": 14
+                  },
+                  "tag": 8,
+                  "index": 13
+                }
+              }
             },
             {
               "pos": 5,
               "opcode": 182,
               "mnemonic": "invokevirtual",
-              "operands": [182, 0, 15],
-              "wide": false
+              "operands": [0, 15],
+              "wide": false,
+              "ctx": {
+                "15": {
+                  "class": {
+                    "name": {
+                      "value": "java/io/PrintStream",
+                      "tag": 1,
+                      "index": 18
+                    },
+                    "tag": 7,
+                    "index": 16
+                  },
+                  "nameAndType": {
+                    "name": { "value": "println", "tag": 1, "index": 19 },
+                    "descriptor": {
+                      "value": "(Ljava/lang/String;)V",
+                      "tag": 1,
+                      "index": 20
+                    },
+                    "tag": 12,
+                    "index": 17
+                  },
+                  "tag": 10,
+                  "index": 15
+                }
+              }
             },
             {
               "pos": 8,
               "opcode": 177,
               "mnemonic": "return",
-              "operands": [177],
-              "wide": false
+              "operands": [],
+              "wide": false,
+              "ctx": {}
             }
           ],
           "exceptionTable": [],
           "attributes": [
             {
-              "name": "LineNumberTable",
+              "name": { "value": "LineNumberTable", "tag": 1, "index": 24 },
+              "known": true,
               "lineNumberTable": [
                 { "startPc": 0, "lineNumber": 5 },
                 { "startPc": 8, "lineNumber": 6 }
@@ -302,7 +391,8 @@ Parsed class file of source code with this package
   ],
   "attributes": [
     {
-      "name": "SourceFile",
+      "name": { "value": "SourceFile", "tag": 1, "index": 26 },
+      "known": true,
       "sourcefile": { "value": "main.java", "tag": 1, "index": 27 }
     }
   ]
