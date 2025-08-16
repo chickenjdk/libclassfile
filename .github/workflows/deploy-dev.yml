@@ -21,3 +21,5 @@ jobs:
       node-version: '22'
       docs-dir: './docs'
       version: ${{ inputs['version'] }}
+    secrets:
+      STATIC_CONTENT_TOKEN: ${{ secrets.STATIC_CONTENT_TOKEN }}
