@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   deploy:
-    uses: chickenjdk/github-actions-workflows/.github/workflows/deploy-docs-and-publish.yml@main
+    uses: chickenjdk/github-actions-workflows/.github/workflows/deploy-dev-docs.yml@main
     with:
       node-version: '22'
       docs-dir: './docs'
