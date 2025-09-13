@@ -156,20 +156,20 @@ export function readAttribute(
         ),
       };
     }
-    case "Exeptions": {
+    case "Exceptions": {
       const numberOfExeptions = buffer.readUnsignedInt(2);
-      const exeptions: classInfo[] = [];
+      const exceptions: classInfo[] = [];
       for (let index = 0; index < numberOfExeptions; index++) {
         const entryIndex = buffer.readUnsignedInt(2);
         const entry = constantPool[entryIndex];
         customAssertInfoType(7, entryIndex, entry);
-        exeptions[index] = entry;
+        exceptions[index] = entry;
       }
       check();
       return {
         name: attributeNameEntry as Narrowest<typeof attributeNameEntry>,
         known: true,
-        exeptions,
+        exceptions,
       };
     }
     case "InnerClasses": {

@@ -150,10 +150,10 @@ export type stackMapTable = {
   entries: stackMapFrames;
 };
 // No more stack map table CHICKEN POOP
-export type exeptions = {
-  name: makeStringUtf8Info<"Exeptions">;
+export type exceptions = {
+  name: makeStringUtf8Info<"Exceptions">;
   known: true;
-  exeptions: classInfo[];
+  exceptions: classInfo[];
 };
 export type innerClasses = {
   name: makeStringUtf8Info<"InnerClasses">;
@@ -424,7 +424,7 @@ type __attribute = [
   | constantValue
   | code
   | stackMapTable
-  | exeptions
+  | exceptions
   | innerClasses
   | enclosingMethod
   | synthetic

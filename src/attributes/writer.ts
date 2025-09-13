@@ -119,13 +119,13 @@ export function writeAttribute(
         );
         break;
       }
-      case "Exeptions": {
+      case "Exceptions": {
         attribute = attribute as Extract<
           attribute,
           { name: { value: typeof name } }
         >;
-        flushBuff.writeUnsignedInt(attribute.exeptions.length, 2);
-        for (const exception of attribute.exeptions) {
+        flushBuff.writeUnsignedInt(attribute.exceptions.length, 2);
+        for (const exception of attribute.exceptions) {
           const entryIndex = constantPool.registerEntry(exception);
           flushBuff.writeUnsignedInt(entryIndex, 2);
         }
