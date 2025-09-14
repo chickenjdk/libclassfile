@@ -1,34 +1,28 @@
 import { writableBuffer } from "@chickenjdk/byteutils";
-import { attribute, customAssertInfoType, knownAttribute } from "./types";
-import { loadableTags, utf8Info } from "../constantPool/types";
-import { flushSinkWritableBuffer } from "../customBuffers";
+import { attribute, knownAttribute } from "./types.js";
+import { loadableTags, utf8Info, customAssertInfoType, writer as constantPoolWriter } from "../constantPool/index.js";
+import { flushSinkWritableBuffer } from "../customBuffers.js";
 import { log } from "@chickenjdk/common";
-import { writeBytecode } from "../bytecode/writer";
+import { writeBytecode } from "../bytecode/writer.js";
 import {
   assertAttributeType,
   writeAnnotation,
   writeElementValue,
   writeStackMapFrames,
   writeTypeAnnotation,
-} from "./helpers";
-import { PoolRegister } from "../constantPool/writer";
+  predefinedValidClassFileAttributesMap
+} from "./helpers.js";
 import {
-  writeInnerClassAccessFlags,
-  writeMethodParametersAccessFlags,
-  writeModuleAttributeAccessFlags,
-  writeModuleAttributeExportsFlags,
-  writeModuleAttributeOpensFlags,
-  writeModuleAttributeRequiresAccessFlags,
-} from "../accessFlags";
-import { writer } from "../signature";
+  writer as accessFlagsWriter
+} from "../accessFlags/index.js";
+import { writer } from "../signature/index.js";
 import {
-  assembleFieldDescriptor,
-  assembleFieldTypeSignature,
-} from "../signature/writer";
-import { predefinedValidClassFileAttributesMap } from "../common";
+  writer as signatureWriter
+} from "../signature/index.js";
+import { lengthWritableBuffer } from "../types.js";
 
 export function writeAttribute(
-  buffer: writableBuffer | flushSinkWritableBuffer,
+  buffer: lengthWritableBuffer,
   attribute: attribute,
   customAssertInfoType: customAssertInfoType,
   enclosingStructure:
@@ -37,8 +31,7 @@ export function writeAttribute(
     | "field_info"
     | "record_component_info"
     | "Code",
-  // A set because the order is not yet known
-  constantPool: PoolRegister
+  constantPool: constantPoolWriter.PoolRegister
 ): void {
   // Generate the attribute
   // Main flushBuff
@@ -168,7 +161,7 @@ export function writeAttribute(
           }
           flushBuff.writeUnsignedInt(innerClass.innerName?.index ?? 0, 2);
           // Access flags
-          writeInnerClassAccessFlags(
+          accessFlagsWriter.writeInnerClassAccessFlags(
             flushBuff,
             innerClass.innerClassAccessFlags
           );
@@ -265,7 +258,7 @@ export function writeAttribute(
           flushBuff.writeUnsignedInt(nameIndex, 2);
           const descriptorEntry: utf8Info = {
             tag: 1,
-            value: assembleFieldDescriptor(variable.descriptor),
+            value: signatureWriter.assembleFieldDescriptor(variable.descriptor),
             index: 0,
           };
           const descriptorIndex = constantPool.registerEntry(descriptorEntry);
@@ -290,7 +283,7 @@ export function writeAttribute(
           flushBuff.writeUnsignedInt(nameIndex, 2);
           const signatureEntry: utf8Info = {
             tag: 1,
-            value: assembleFieldTypeSignature(variable_type.signature),
+            value: signatureWriter.assembleFieldTypeSignature(variable_type.signature),
             index: 0,
           };
           const signatureIndex = constantPool.registerEntry(signatureEntry);
@@ -425,7 +418,7 @@ export function writeAttribute(
             customAssertInfoType(loadableTags, nameIndex, parameter.name);
           }
           flushBuff.writeUnsignedInt(nameIndex, 2);
-          writeMethodParametersAccessFlags(flushBuff, parameter.accessFlags);
+          accessFlagsWriter.writeMethodParametersAccessFlags(flushBuff, parameter.accessFlags);
         }
         break;
       }
@@ -440,7 +433,7 @@ export function writeAttribute(
           attribute.moduleName.index,
           attribute.moduleName
         );
-        writeModuleAttributeAccessFlags(flushBuff, attribute.moduleFlags);
+        accessFlagsWriter.writeModuleAttributeAccessFlags(flushBuff, attribute.moduleFlags);
 
         if (attribute.moduleVersion) {
           const versionIndex = constantPool.registerEntry(
@@ -458,7 +451,7 @@ export function writeAttribute(
           const requireIndex = constantPool.registerEntry(require.requires);
           customAssertInfoType(7, requireIndex, require.requires);
           flushBuff.writeUnsignedInt(requireIndex, 2);
-          writeModuleAttributeRequiresAccessFlags(
+          accessFlagsWriter.writeModuleAttributeRequiresAccessFlags(
             flushBuff,
             require.requiresFlags
           );
@@ -483,7 +476,7 @@ export function writeAttribute(
           const exportIndex = constantPool.registerEntry(exportEntry.exports);
           customAssertInfoType(7, exportIndex, exportEntry.exports);
           flushBuff.writeUnsignedInt(exportIndex, 2);
-          writeModuleAttributeExportsFlags(flushBuff, exportEntry.exportsFlags);
+          accessFlagsWriter.writeModuleAttributeExportsFlags(flushBuff, exportEntry.exportsFlags);
           flushBuff.writeUnsignedInt(exportEntry.exportsTo.length, 2);
           for (const exportTo of exportEntry.exportsTo) {
             const exportToIndex = constantPool.registerEntry(exportTo);
@@ -498,7 +491,7 @@ export function writeAttribute(
           const openIndex = constantPool.registerEntry(open.opens);
           customAssertInfoType(7, openIndex, open.opens);
           flushBuff.writeUnsignedInt(openIndex, 2);
-          writeModuleAttributeOpensFlags(flushBuff, open.opensFlags);
+          accessFlagsWriter.writeModuleAttributeOpensFlags(flushBuff, open.opensFlags);
           flushBuff.writeUnsignedInt(open.opensTo.length, 2);
           for (const opensTo of open.opensTo) {
             const opensToIndex = constantPool.registerEntry(opensTo);

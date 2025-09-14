@@ -1,19 +1,15 @@
 import { writableBuffer } from "@chickenjdk/byteutils";
-import { PoolType } from "./types";
-import { flushSinkWritableBuffer } from "../customBuffers";
+import { constantPoolEntry, PoolType } from "./types.js";
+import { flushSinkWritableBuffer } from "../customBuffers.js";
 import {
   constantPoolUnknownTagError,
   disallowedError,
   formatError,
   unknownTagError,
-} from "../errors";
-import { assertInRange, inRange, log } from "@chickenjdk/common";
-import {
-  assertInfoType as __assertInfoType_old__,
-  assertInfoType,
-} from "../common";
+} from "../errors.js";
+import { assertInRange, inRange } from "@chickenjdk/common";
 import { isDeepStrictEqual } from "util";
-
+import { assertInfoType } from "./helpers.js";
 export function writeConstantPool(buffer: writableBuffer, pool: PoolRegister) {
   const flushBuff = new flushSinkWritableBuffer();
   const flushBuff2 = new flushSinkWritableBuffer();
@@ -199,7 +195,7 @@ export function writeConstantPool(buffer: writableBuffer, pool: PoolRegister) {
       }
       default: {
         throw new unknownTagError(
-          `Unknown constant pool tag ${(entry as PoolType[number]).tag}`
+          `Unknown constant pool tag ${(entry as constantPoolEntry).tag}`
         );
       }
     }

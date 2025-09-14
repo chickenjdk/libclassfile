@@ -136,4 +136,4 @@ docs/
 .vscode/
 
 # Test files
-testOutput/
+testFiles/

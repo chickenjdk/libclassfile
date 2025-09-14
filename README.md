@@ -23,9 +23,9 @@ public class main
 Example use code
 
 ```js
-const { readClassFile } = require("libclassfile");
-const { readFileSync } = require("fs");
-const { readableBuffer } = require("@chickenjdk/byteutils");
+import { readClassFile } from "libclassfile";
+import { readFileSync } from "fs";
+import { readableBuffer } from "@chickenjdk/byteutils";
 const testFile = readFileSync("./main.class");
 console.log(JSON.stringify(readClassFile(new readableBuffer(testFile))));
 ```

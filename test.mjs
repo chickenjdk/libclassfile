@@ -1,13 +1,10 @@
-const {
-  readClassFile,
-  parseBytecode,
-  writeBytecode,
-  writeClassFile,
-} = require("./");
-const { readFileSync, mkdirSync, writeFileSync } = require("fs");
-const { readableBuffer, writableBuffer } = require("@chickenjdk/byteutils");
+import {
+  classFile
+} from "./dist/index.js";
+import { readFileSync, mkdirSync, writeFileSync } from "fs";
+import { readableBuffer, writableBuffer } from "@chickenjdk/byteutils";
 const testFile = readFileSync("./main.class");
-const parsedFile = readClassFile(new readableBuffer(testFile));
+const parsedFile = classFile.parser.readClassFile(new readableBuffer(testFile));
 console.log(JSON.stringify(parsedFile));
 //return;
 /*
@@ -134,5 +131,5 @@ writeBytecode(buffer, result);
 console.log(JSON.stringify(parseBytecode(new readableBuffer(buffer.buffer))));*/
 console.log("Reassembling the main.class");
 mkdirSync("./testFiles");
-const assembledFile = writeClassFile(parsedFile);
+const assembledFile = classFile.writer.writeClassFile(parsedFile);
 writeFileSync("./testFiles/main.class", assembledFile.buffer);

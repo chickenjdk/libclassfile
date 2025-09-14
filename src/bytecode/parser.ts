@@ -1,6 +1,6 @@
-import { PoolType } from "../constantPool/types";
-import { unwidenableOpcodeError, noOperandError, refError } from "../errors";
-import { BytecodeInstruction, opcodeMnemonics } from "./types";
+import { PoolType } from "../constantPool/index.js";
+import { unwidenableOpcodeError, noOperandError, refError } from "../errors.js";
+import { BytecodeInstruction, opcodeMnemonics } from "./types.js";
 import { readableBuffer } from "@chickenjdk/byteutils";
 
 export function parseBytecode(

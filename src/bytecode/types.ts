@@ -1,5 +1,5 @@
 import { Expand } from "@chickenjdk/common";
-import { PoolType } from "../constantPool/types";
+import { PoolType } from "../constantPool/types.js";
 
 interface mnemonic {
   mnemonic: string;

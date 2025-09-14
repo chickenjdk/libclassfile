@@ -1,12 +1,10 @@
-import { writableBuffer } from "@chickenjdk/byteutils";
-import { BytecodeInstruction, opcodeMnemonics, typeMapping } from "./types";
+import { BytecodeInstruction, opcodeMnemonics, typeMapping } from "./types.js";
 import {
-  classFileParseError,
   disallowedError,
   disallowedLengthError,
-} from "../errors";
-import { flushSinkWritableBuffer } from "../customBuffers";
-import { PoolRegister } from "../constantPool/writer";
+} from "../errors.js";
+import { writer } from "../constantPool/index.js";
+import { lengthWritableBuffer } from "../types.js";
 
 function assertCorrectType<char extends keyof typeMapping>(
   operand: unknown,
@@ -32,9 +30,9 @@ function assertCorrectType<char extends keyof typeMapping>(
  * @throws Will throw an error if the opcode is unknown or if the operand type is incorrect.
  */
 export function writeBytecode(
-  buffer: writableBuffer | flushSinkWritableBuffer,
+  buffer: lengthWritableBuffer,
   bytecode: BytecodeInstruction[],
-  constantPool: PoolRegister
+  constantPool: writer.PoolRegister
 ): void {
   const startLength = buffer.length;
   for (const instruction of bytecode) {

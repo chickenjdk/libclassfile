@@ -1,12 +1,17 @@
 import type { readableBuffer } from "@chickenjdk/byteutils";
-import { constantPoolUnknownTagError, unknownTagError } from "../errors";
+import { constantPoolUnknownTagError, unknownTagError } from "../errors.js";
 import { assertInRange, prioritizedHook } from "@chickenjdk/common";
-import { assertInfoType as __assertInfoType_old__ } from "../common";
-import { findInfoTypeByTag, poolTags, PoolType } from "./types";
+import {
+  constantPoolEntry,
+  findInfoTypeByTag,
+  poolTags,
+  PoolType,
+} from "./types.js";
+import { assertInfoType as __assertInfoType_old__ } from "./helpers.js";
 function assertInfoType<expectedTag extends poolTags | poolTags[]>(
   expectedTag: expectedTag,
   entryIndex: number,
-  entry: PoolType[number],
+  entry: constantPoolEntry,
   [callerTag, callerIndex]: [poolTags, number]
 ): asserts entry is findInfoTypeByTag<
   expectedTag extends any[] ? expectedTag[number] : expectedTag

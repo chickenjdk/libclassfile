@@ -1,5 +1,17 @@
 import { makeMutable, Expand } from "@chickenjdk/common";
-import {  expansionIgnoreListSafe } from "../types";
+import { expansionIgnoreListSafe } from "../types.js";
+
+/**
+ * @private
+ */
+
+export type customAssertInfoType = <expectedTag extends poolTags | poolTags[]>(
+  expectedTag: expectedTag,
+  entryIndex: number,
+  entry: constantPoolEntry
+) => asserts entry is findInfoTypeByTag<
+  expectedTag extends any[] ? expectedTag[number] : expectedTag
+>;
 
 type addIndex<T> = T extends any ? T & { index: number } : never;
 export type unusableInfo = Expand<
@@ -97,29 +109,31 @@ export type packageInfo = Expand<
   expansionIgnoreListSafe
 >;
 
+export type constantPoolEntry =
+  | unusableInfo
+  | classInfo
+  | refInfo
+  | stringInfo
+  | integerInfo
+  | floatInfo
+  | longInfo
+  | doubleInfo
+  | nameAndTypeInfo
+  | utf8Info
+  | methodHandleInfo
+  | methodTypeInfo
+  | dynamicInfo
+  | moduleOrPackageInfo;
 export type PoolType = {
   [key in number]:
-    | unusableInfo
-    | classInfo
-    | refInfo
-    | stringInfo
-    | integerInfo
-    | floatInfo
-    | longInfo
-    | doubleInfo
-    | nameAndTypeInfo
-    | utf8Info
-    | methodHandleInfo
-    | methodTypeInfo
-    | dynamicInfo
-    | moduleOrPackageInfo;
+  constantPoolEntry;
 };
-export type poolTags = PoolType[number]["tag"];
+export type poolTags = constantPoolEntry["tag"];
 /**
  * @private
  */
 export type findInfoTypeByTag<Tag extends poolTags> = Extract<
-  PoolType[number],
+constantPoolEntry,
   { tag: Tag }
 >;
 export type loadableTags =

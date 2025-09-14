@@ -1,27 +1,21 @@
 import type { readableBuffer } from "@chickenjdk/byteutils";
 import {
   classInfo,
+  constantPoolEntry,
   loadableTags,
   moduleInfo,
   nameAndTypeInfo,
   packageInfo,
   PoolType,
   utf8Info,
-} from "../constantPool/types";
-import {
-  readInnerClassAccessFlags,
-  readMethodParametersAccessFlags,
-  readModuleAttributeAccessFlags,
-  readModuleAttributeRequiresAccessFlags,
-  readModuleAttributeExportsFlags,
-  readModuleAttributeOpensFlags,
-} from "../accessFlags";
+  customAssertInfoType
+} from "../constantPool/index.js";
+import { parser as accessFlagsParser } from "../accessFlags/index.js";
 import { log, Narrowest } from "@chickenjdk/common";
 import {
   annotation,
   attribute,
   bootstrapMethods,
-  customAssertInfoType,
   exceptionTable,
   getLegalAttributes,
   innerClasses,
@@ -38,24 +32,24 @@ import {
   runtimeVisibleParameterAnnotations,
   runtimeVisibleTypeAnnotations,
   typeAnnotation,
-} from "./types";
+} from "./types.js";
 import {
   assertAttributeType,
   readAnnotation,
   readElementValue,
   readStackMapFrames,
   readTypeAnnotation,
-} from "./helpers";
-import { predefinedValidClassFileAttributesMap } from "../common";
-import { disallowedError } from "../errors";
-import { parseBytecode } from "../bytecode/parse";
-import { parser } from "../signature";
+  predefinedValidClassFileAttributesMap,
+} from "./helpers.js";
+import { disallowedError } from "../errors.js";
+import { parser as bytecodeParser } from "../bytecode/index.js";
+import { parser as signatureParser } from "../signature/index.js";
 import {
   parseClassSignature,
   parseFieldDescriptor,
   parseFieldTypeSignature,
   parseMethodTypeSignature,
-} from "../signature/parser";
+} from "../signature/parser.js";
 export function readAttribute(
   allBuffer: readableBuffer,
   constantPool: PoolType,
@@ -100,7 +94,10 @@ export function readAttribute(
       const maxStack = buffer.readUnsignedInt(2);
       const maxLocals = buffer.readUnsignedInt(2);
       const codeLength = buffer.readUnsignedInt(4);
-      const code = parseBytecode(buffer.readReadableBuffer(codeLength), constantPool);
+      const code = bytecodeParser.parseBytecode(
+        buffer.readReadableBuffer(codeLength),
+        constantPool
+      );
       const exceptionTableLength = buffer.readUnsignedInt(2);
       let exceptionTable: exceptionTable = [];
       for (let index = 0; index < exceptionTableLength; index++) {
@@ -189,7 +186,7 @@ export function readAttribute(
         if (innerNameIndex !== 0) {
           customAssertInfoType(1, innerNameIndex, innerName);
         }
-        const innerClassAccessFlags = readInnerClassAccessFlags(buffer);
+        const innerClassAccessFlags = accessFlagsParser.readInnerClassAccessFlags(buffer);
         classes[index] = {
           innerClassInfo,
           outerClassInfo: outerClassInfo as classInfo | undefined,
@@ -209,7 +206,7 @@ export function readAttribute(
       const classValue = constantPool[classIndex];
       customAssertInfoType(7, classIndex, classValue);
       const methodIndex = buffer.readUnsignedInt(2);
-      const method: PoolType[number] = constantPool[methodIndex];
+      const method: constantPoolEntry = constantPool[methodIndex];
       if (methodIndex !== 0) {
         customAssertInfoType(12, methodIndex, method);
       }
@@ -449,7 +446,7 @@ export function readAttribute(
         if (nameIndex !== 0) {
           customAssertInfoType(1, nameIndex, name);
         }
-        const accessFlags = readMethodParametersAccessFlags(buffer);
+        const accessFlags = accessFlagsParser.readMethodParametersAccessFlags(buffer);
         parameters[index] = { name: name as utf8Info | undefined, accessFlags };
       }
       return {
@@ -462,7 +459,7 @@ export function readAttribute(
       const moduleNameIndex = buffer.readUnsignedInt(2);
       const moduleName = constantPool[moduleNameIndex];
       customAssertInfoType(1, moduleNameIndex, moduleName);
-      const moduleFlags = readModuleAttributeAccessFlags(buffer);
+      const moduleFlags = accessFlagsParser.readModuleAttributeAccessFlags(buffer);
       const moduleVersionIndex = buffer.readUnsignedInt(2);
       const moduleVersion = constantPool[moduleVersionIndex] as
         | utf8Info
@@ -477,7 +474,7 @@ export function readAttribute(
         const requiresIndex = buffer.readUnsignedInt(2);
         const requires = constantPool[requiresIndex];
         customAssertInfoType(19, requiresIndex, requires);
-        const requiresFlags = readModuleAttributeRequiresAccessFlags(buffer);
+        const requiresFlags = accessFlagsParser.readModuleAttributeRequiresAccessFlags(buffer);
         const requiresVersionIndex = buffer.readUnsignedInt(2);
         const requiresVersion = constantPool[requiresVersionIndex] as
           | utf8Info
@@ -494,7 +491,7 @@ export function readAttribute(
         const exportsIndex = buffer.readUnsignedInt(2);
         const exportsPackage = constantPool[exportsIndex];
         customAssertInfoType(20, exportsIndex, exportsPackage);
-        const exportsFlags = readModuleAttributeExportsFlags(buffer);
+        const exportsFlags = accessFlagsParser.readModuleAttributeExportsFlags(buffer);
         const exportsToCount = buffer.readUnsignedInt(2);
         const exportsTo: moduleInfo[] = [];
         for (let index = 0; index < exportsToCount; index++) {
@@ -516,7 +513,7 @@ export function readAttribute(
         const opensIndex = buffer.readUnsignedInt(2);
         const opensPackage = constantPool[opensIndex];
         customAssertInfoType(20, opensIndex, opensPackage);
-        const opensFlags = readModuleAttributeOpensFlags(buffer);
+        const opensFlags = accessFlagsParser.readModuleAttributeOpensFlags(buffer);
         const opensToCount = buffer.readUnsignedInt(2);
         const opensTo: moduleInfo[] = [];
         for (let index = 0; index < opensToCount; index++) {

@@ -1,24 +1,11 @@
 import type { range, Expand } from "@chickenjdk/common";
+import type { expansionIgnoreListSafe } from "../types.js";
+import type { predefinedValidClassFileAttributesMap } from "./helpers.js";
 import type {
-  expansionIgnoreListSafe,
-  moduleAttributeOpensFlags,
-} from "../types";
-import type { moduleAttributeExportsFlags } from "../types";
-import type { moduleAttributeRequiresAccessFlags } from "../types";
-import type { moduleAttributeAccessFlags } from "../types";
-import type { methodParametersAccessFlags } from "../types";
-import type { innerClassAccessFlags } from "../types";
-import type { predefinedValidClassFileAttributesMap } from "../common";
-import type {
-  poolTags,
-  findInfoTypeByTag,
   methodHandleInfo,
   loadableTags,
   moduleInfo,
   packageInfo,
-} from "../constantPool/types";
-import type {
-  PoolType,
   integerInfo,
   floatInfo,
   longInfo,
@@ -27,30 +14,31 @@ import type {
   classInfo,
   utf8Info,
   nameAndTypeInfo,
-} from "../constantPool/types";
-import { BytecodeInstruction } from "../bytecode/types";
-import { ClassSignature, FieldDescriptor, FieldTypeSignature, MethodTypeSignature, SignatureAST, TypeSignature } from "../signature";
+} from "../constantPool/index.js";
+import { BytecodeInstruction } from "../bytecode/types.js";
+import {
+  ClassSignature,
+  FieldDescriptor,
+  FieldTypeSignature,
+  MethodTypeSignature,
+} from "../signature/index.js";
+import {
+  innerClassAccessFlags,
+  methodParametersAccessFlags,
+  moduleAttributeAccessFlags,
+  moduleAttributeExportsFlags,
+  moduleAttributeOpensFlags,
+  moduleAttributeRequiresAccessFlags,
+} from "../accessFlags/index.js";
 
-/**
- * @private
- */
-export type customAssertInfoType = <expectedTag extends poolTags | poolTags[]>(
-  expectedTag: expectedTag,
-  entryIndex: number,
-  entry: PoolType[number]
-) => asserts entry is findInfoTypeByTag<
-  expectedTag extends any[] ? expectedTag[number] : expectedTag
->;
-export type makeStringUtf8Info<T extends string> = Expand<
-  utf8Info & { value: T }
->;
+export type utf8InfoIdentifier<T extends string> = utf8Info & { value: T };
 export type constantValue = {
-  name: makeStringUtf8Info<"ConstantValue">;
+  name: utf8InfoIdentifier<"ConstantValue">;
   known: true;
   value: integerInfo | floatInfo | longInfo | doubleInfo | stringInfo;
 };
 export type code = {
-  name: makeStringUtf8Info<"Code">;
+  name: utf8InfoIdentifier<"Code">;
   known: true;
   maxStack: number;
   maxLocals: number;
@@ -145,18 +133,18 @@ export type stackMapFrames = Expand<
   expansionIgnoreListSafe
 >;
 export type stackMapTable = {
-  name: makeStringUtf8Info<"StackMapTable">;
+  name: utf8InfoIdentifier<"StackMapTable">;
   known: true;
   entries: stackMapFrames;
 };
 // No more stack map table CHICKEN POOP
 export type exceptions = {
-  name: makeStringUtf8Info<"Exceptions">;
+  name: utf8InfoIdentifier<"Exceptions">;
   known: true;
   exceptions: classInfo[];
 };
 export type innerClasses = {
-  name: makeStringUtf8Info<"InnerClasses">;
+  name: utf8InfoIdentifier<"InnerClasses">;
   known: true;
   classes: {
     innerClassInfo: classInfo;
@@ -166,34 +154,34 @@ export type innerClasses = {
   }[];
 };
 export type enclosingMethod = {
-  name: makeStringUtf8Info<"EnclosingMethod">;
+  name: utf8InfoIdentifier<"EnclosingMethod">;
   known: true;
   class: classInfo;
   method: nameAndTypeInfo | undefined;
 };
-export type synthetic = { name: makeStringUtf8Info<"Synthetic">; known: true };
+export type synthetic = { name: utf8InfoIdentifier<"Synthetic">; known: true };
 export type signature = {
-  name: makeStringUtf8Info<"Signature">;
+  name: utf8InfoIdentifier<"Signature">;
   known: true;
   signature: ClassSignature | MethodTypeSignature | FieldTypeSignature;
 };
 export type sourcefile = {
-  name: makeStringUtf8Info<"SourceFile">;
+  name: utf8InfoIdentifier<"SourceFile">;
   known: true;
   sourcefile: utf8Info;
 };
 export type sourceDebugExtension = {
-  name: makeStringUtf8Info<"SourceDebugExtension">;
+  name: utf8InfoIdentifier<"SourceDebugExtension">;
   known: true;
   debugExtension: string;
 };
 export type lineNumberTable = {
-  name: makeStringUtf8Info<"LineNumberTable">;
+  name: utf8InfoIdentifier<"LineNumberTable">;
   known: true;
   lineNumberTable: { startPc: number; lineNumber: number }[];
 };
 export type localVariableTable = {
-  name: makeStringUtf8Info<"LocalVariableTable">;
+  name: utf8InfoIdentifier<"LocalVariableTable">;
   known: true;
   localVariableTable: {
     startPc: number;
@@ -204,7 +192,7 @@ export type localVariableTable = {
   }[];
 };
 export type localVariableTypeTable = {
-  name: makeStringUtf8Info<"LocalVariableTypeTable">;
+  name: utf8InfoIdentifier<"LocalVariableTypeTable">;
   known: true;
   localVariableTypeTable: {
     startPc: number;
@@ -215,26 +203,26 @@ export type localVariableTypeTable = {
   }[];
 };
 export type deprecated = {
-  name: makeStringUtf8Info<"Deprecated">;
+  name: utf8InfoIdentifier<"Deprecated">;
   known: true;
 };
 export type runtimeVisibleAnnotations = {
-  name: makeStringUtf8Info<"RuntimeVisibleAnnotations">;
+  name: utf8InfoIdentifier<"RuntimeVisibleAnnotations">;
   known: true;
   annotations: annotation[];
 };
 export type runtimeInvisibleAnnotations = {
-  name: makeStringUtf8Info<"RuntimeInvisibleAnnotations">;
+  name: utf8InfoIdentifier<"RuntimeInvisibleAnnotations">;
   known: true;
   annotations: annotation[];
 };
 export type runtimeVisibleParameterAnnotations = {
-  name: makeStringUtf8Info<"RuntimeVisibleParameterAnnotations">;
+  name: utf8InfoIdentifier<"RuntimeVisibleParameterAnnotations">;
   known: true;
   parameterAnnotations: annotation[][];
 };
 export type runtimeInvisibleParameterAnnotations = {
-  name: makeStringUtf8Info<"RuntimeInvisibleParameterAnnotations">;
+  name: utf8InfoIdentifier<"RuntimeInvisibleParameterAnnotations">;
   known: true;
   parameterAnnotations: annotation[][];
 };
@@ -328,22 +316,22 @@ export type typeAnnotation = {
 } & annotation;
 // END
 export type runtimeVisibleTypeAnnotations = {
-  name: makeStringUtf8Info<"RuntimeVisibleTypeAnnotations">;
+  name: utf8InfoIdentifier<"RuntimeVisibleTypeAnnotations">;
   known: true;
   annotations: typeAnnotation[];
 };
 export type runtimeInvisibleTypeAnnotations = {
-  name: makeStringUtf8Info<"RuntimeInvisibleTypeAnnotations">;
+  name: utf8InfoIdentifier<"RuntimeInvisibleTypeAnnotations">;
   known: true;
   annotations: typeAnnotation[];
 };
 export type annotationDefault = {
-  name: makeStringUtf8Info<"AnnotationDefault">;
+  name: utf8InfoIdentifier<"AnnotationDefault">;
   known: true;
   defaultValue: elementValue;
 };
 export type bootstrapMethods = {
-  name: makeStringUtf8Info<"BootstrapMethods">;
+  name: utf8InfoIdentifier<"BootstrapMethods">;
   known: true;
   bootstrapMethods: {
     bootstrapMethod: methodHandleInfo;
@@ -351,7 +339,7 @@ export type bootstrapMethods = {
   }[];
 };
 export type methodParameters = {
-  name: makeStringUtf8Info<"MethodParameters">;
+  name: utf8InfoIdentifier<"MethodParameters">;
   known: true;
   parameters: {
     name: utf8Info | undefined;
@@ -360,7 +348,7 @@ export type methodParameters = {
 };
 
 export type module = {
-  name: makeStringUtf8Info<"Module">;
+  name: utf8InfoIdentifier<"Module">;
   known: true;
   moduleName: utf8Info;
   moduleFlags: moduleAttributeAccessFlags;
@@ -384,28 +372,28 @@ export type module = {
   provides: { provides: classInfo; providesWith: classInfo[] }[];
 };
 export type modulePackages = {
-  name: makeStringUtf8Info<"ModulePackages">;
+  name: utf8InfoIdentifier<"ModulePackages">;
   known: true;
   packages: packageInfo[];
 };
 export type moduleMainClass = {
-  name: makeStringUtf8Info<"ModuleMainClass">;
+  name: utf8InfoIdentifier<"ModuleMainClass">;
   known: true;
   mainClass: classInfo;
 };
 export type nestHost = {
-  name: makeStringUtf8Info<"NestHost">;
+  name: utf8InfoIdentifier<"NestHost">;
   known: true;
   hostClass: classInfo;
 };
 export type nestMembers = {
-  name: makeStringUtf8Info<"NestMembers">;
+  name: utf8InfoIdentifier<"NestMembers">;
   known: true;
   classes: classInfo[];
 };
 export type record = Expand<
   {
-    name: makeStringUtf8Info<"Record">;
+    name: utf8InfoIdentifier<"Record">;
     known: true;
     components: {
       name: utf8Info;
@@ -416,11 +404,16 @@ export type record = Expand<
   expansionIgnoreListSafe
 >;
 export type permittedSubclasses = {
-  name: makeStringUtf8Info<"PermittedSubclasses">;
+  name: utf8InfoIdentifier<"PermittedSubclasses">;
   known: true;
   classes: classInfo[];
 };
-type __attribute = [
+export type unknownAttribute = {
+  name: utf8Info;
+  rawData: Uint8Array;
+  known: false;
+};
+export type knownAttribute =
   | constantValue
   | code
   | stackMapTable
@@ -450,12 +443,8 @@ type __attribute = [
   | nestHost
   | nestMembers
   | record
-  | permittedSubclasses
-];
-export type knownAttribute = __attribute[number];
-export type attribute =
-  | __attribute[0]
-  | { name: utf8Info; rawData: Uint8Array; known: false };
+  | permittedSubclasses;
+export type attribute = knownAttribute | unknownAttribute;
 export type exceptionTable = {
   // Inclusive
   startPc: number;

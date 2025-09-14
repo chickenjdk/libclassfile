@@ -47,7 +47,7 @@ export interface MethodDescriptor {
 }
 
 // For signatures (generics allowed) — now flattened to avoid circular refs
-type NonVoidFieldLike = ClassType | TypeVariable | ArrayType<BaseType | ClassType | TypeVariable>;
+export type NonVoidFieldLike = ClassType | TypeVariable | ArrayType<BaseType | ClassType | TypeVariable>;
 export type FieldTypeSignature = NonVoidFieldLike;
 export type TypeSignature = BaseType | FieldTypeSignature | VoidType; // 'void' only valid for method return
 

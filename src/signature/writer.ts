@@ -19,7 +19,7 @@ import {
     TypeVariable,
     DescriptorAST,
     SignatureAST,
-  } from './types';
+  } from './types.js';
   
   // ---------------- utility maps ----------------
   const codeByBase: Record<BaseTypeName, string> = {

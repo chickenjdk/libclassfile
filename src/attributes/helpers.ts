@@ -1,22 +1,30 @@
 import type { readableBuffer, writableBuffer } from "@chickenjdk/byteutils";
-import { PoolType, utf8Info } from "../constantPool/types";
-import { disallowedError, invalidPointerError, unknownError } from "../errors";
+import {
+  PoolType,
+  utf8Info,
+  customAssertInfoType,
+} from "../constantPool/index.js";
+import {
+  disallowedError,
+  invalidPointerError,
+  unknownError,
+} from "../errors.js";
 import {
   annotation,
   attribute,
   byteOffsetDelta,
-  customAssertInfoType,
   elementValue,
-  makeStringUtf8Info,
+  utf8InfoIdentifier,
   stackMapFrame,
   stackMapFrames,
   targetInfo,
   typeAnnotation,
   verificationTypeInfo,
-} from "./types";
+} from "./types.js";
 import { inRange, makeMutable, range } from "@chickenjdk/common";
-import { flushSinkWritableBuffer } from "../customBuffers";
-import { PoolRegister } from "../constantPool/writer";
+import { flushSinkWritableBuffer } from "../customBuffers.js";
+import { PoolRegister } from "../constantPool/writer.js";
+import { lengthWritableBuffer } from "../types.js";
 
 const validTags = [1, 2, 3, 4, 5, 6, 7, 8];
 export function readVerificationTypeInfo(
@@ -45,7 +53,7 @@ export function readVerificationTypeInfo(
   }
 }
 export function writeVerificationTypeInfo(
-  buffer: writableBuffer | flushSinkWritableBuffer,
+  buffer: lengthWritableBuffer,
   verificationType: verificationTypeInfo,
   constantPool: PoolRegister,
   customAssertInfoType: customAssertInfoType
@@ -139,7 +147,7 @@ export function readStackMapFrame(
   }
 }
 export function writeStackMapFrame(
-  buffer: writableBuffer | flushSinkWritableBuffer,
+  buffer: lengthWritableBuffer,
   frame: stackMapFrame,
   constantPool: PoolRegister,
   customAssertInfoType: customAssertInfoType
@@ -232,7 +240,7 @@ export function readStackMapFrames(
   return frames;
 }
 export function writeStackMapFrames(
-  buffer: writableBuffer | flushSinkWritableBuffer,
+  buffer: lengthWritableBuffer,
   frames: stackMapFrames,
   constantPool: PoolRegister,
   customAssertInfoType: customAssertInfoType
@@ -343,7 +351,7 @@ export function readElementValue(
 }
 
 export function writeElementValue(
-  buffer: writableBuffer | flushSinkWritableBuffer,
+  buffer: lengthWritableBuffer,
   elementValue: elementValue,
   constantPool: PoolRegister,
   customAssertInfoType: customAssertInfoType
@@ -468,7 +476,7 @@ export function readAnnotation(
   return { type, elementValuePairs };
 }
 export function writeAnnotation(
-  buffer: writableBuffer | flushSinkWritableBuffer,
+  buffer: lengthWritableBuffer,
   annotation: annotation,
   constantPool: PoolRegister,
   customAssertInfoType: customAssertInfoType
@@ -693,7 +701,7 @@ export function readTypeAnnotation(
   };
 }
 export function writeTypeAnnotation(
-  buffer: writableBuffer | flushSinkWritableBuffer,
+  buffer: lengthWritableBuffer,
   typeAnnotation: typeAnnotation,
   constantPool: PoolRegister,
   customAssertInfoType: customAssertInfoType,
@@ -807,6 +815,7 @@ export function writeTypeAnnotation(
     buffer.push(entry.typeArgumentIndex);
   }
 }
+
 export function assertAttributeType<
   allowedNames extends
     | attribute["name"]["value"]
@@ -839,7 +848,7 @@ export function assertAttributeType<
             ? ` is ${allowedNames[0]}`
             : `s are ${
                 allowedNames.length > 2
-                  ? allowedNames.reduce(
+                  ? (allowedNames as any[]).reduce(
                       (last, allowed, index, array) =>
                         index === array.length - 1
                           ? `${last}and ${allowed}`
@@ -859,3 +868,78 @@ export function assertAttributeType<
     }
   }
 }
+
+export const predefinedValidClassFileAttributesMap = {
+  ClassFile: [
+    "SourceFile",
+    "InnerClasses",
+    "EnclosingMethod",
+    "SourceDebugExtension",
+    "BootstrapMethods",
+    "Module",
+    "ModulePackages",
+    "ModuleMainClass",
+    "NestHost",
+    "NestMembers",
+    "Record",
+    "PermittedSubclasses",
+    "Synthetic",
+    "Deprecated",
+    "Signature",
+    "RuntimeVisibleAnnotations",
+    "RuntimeVisibleTypeAnnotations",
+  ],
+  field_info: [
+    "ConstantValue",
+    "Signature",
+    "RuntimeVisibleAnnotations",
+    "RuntimeVisibleTypeAnnotations",
+  ],
+  method_info: [
+    "Code",
+    "Exceptions",
+    "RuntimeVisibleParameterAnnotations",
+    "AnnotationDefault",
+    "MethodParameters",
+    "Signature",
+    "RuntimeVisibleAnnotations",
+    "RuntimeVisibleTypeAnnotations",
+  ],
+  record_component_info: [
+    "Signature",
+    "RuntimeVisibleAnnotations",
+    "RuntimeVisibleTypeAnnotations",
+  ],
+  Code: [
+    "LineNumberTable",
+    "LocalVariableTable",
+    "LocalVariableTypeTable",
+    "StackMapTable",
+    "RuntimeVisibleTypeAnnotations",
+  ],
+} as const;
+/*
+Run in browser
+const detable = (tbody) =>
+  Array.from(tbody.children).map((line) =>
+    [
+      line.children[1].children[0].textContent,
+      line.children[0].children[0].textContent,
+      // @ts-ignore
+    ].map((text) => text.replace(/[^A-z,]/gm, "").split(","))
+  );
+Format
+const map = (unmapped
+//: [string[], string[]][]
+) =>
+  unmapped.reduce((map, item) => {
+    for (const key of item[0]) {
+      if (!(key in map)) {
+        map[key] = [];
+      }
+      map[key].push(...item[1]);
+    }
+    return map;
+  }, // {} as { [key in string]: string[] }
+  );
+*/
