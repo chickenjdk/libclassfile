@@ -26,7 +26,7 @@ import { flushSinkWritableBuffer } from "../customBuffers.js";
 import { PoolRegister } from "../constantPool/writer.js";
 import { lengthWritableBuffer } from "../types.js";
 
-const validTags = [1, 2, 3, 4, 5, 6, 7, 8];
+const validTags = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 export function readVerificationTypeInfo(
   buffer: readableBuffer,
   constantPool: PoolType,

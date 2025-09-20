@@ -1,13 +1,11 @@
-import {
-  classFile
-} from "./dist/index.js";
+import { classFile, bytecode } from "./dist/index.js";
 import { readFileSync, mkdirSync, writeFileSync } from "fs";
 import { readableBuffer, writableBuffer } from "@chickenjdk/byteutils";
 const testFile = readFileSync("./main.class");
 const parsedFile = classFile.parser.readClassFile(new readableBuffer(testFile));
 console.log(JSON.stringify(parsedFile));
 //return;
-/*
+
 const testBytecodeCases = [
   {
     label: "nop (b)",
@@ -40,6 +38,31 @@ const testBytecodeCases = [
   {
     label: "invokespecial (bkk)",
     bytes: Uint8Array.from([0xb7, 0x00, 0x0a]), // invokespecial #10
+    ctx: {
+      10: {
+        class: {
+          name: {
+            value: "java/io/PrintStream",
+            tag: 1,
+            index: 18,
+          },
+          tag: 7,
+          index: 16,
+        },
+        nameAndType: {
+          name: { value: "println", tag: 1, index: 19 },
+          descriptor: {
+            value: "(Ljava/lang/String;)V",
+            tag: 1,
+            index: 20,
+          },
+          tag: 12,
+          index: 17,
+        },
+        tag: 10,
+        index: 15,
+      },
+    },
   },
   {
     label: "invokeinterface (bkkc)",
@@ -116,19 +139,28 @@ const testBytecodeCases = [
     ]),
   },
 ];
-const result = []
+const result = [];
 for (const test of testBytecodeCases) {
   console.log(`Testing: ${test.label}`);
   const bytecodeBuffer = new readableBuffer(test.bytes);
-  const instructions = parseBytecode(bytecodeBuffer);
+  const instructions = bytecode.parser.parseBytecode(bytecodeBuffer, test.ctx ?? new Proxy({}, {
+    get(target, prop) {
+      return {};
+    },
+  }));
   console.log(JSON.stringify(instructions, null, 2));
-  result.push(...instructions)
+  result.push(...instructions);
 }
 
-console.log(`Testing all of them together, parse/assemble/parse`);
-const buffer = new writableBuffer()
+/*console.log(`Testing all of them together, parse/assemble/parse`);
+const buffer = new writableBuffer();
 writeBytecode(buffer, result);
-console.log(JSON.stringify(parseBytecode(new readableBuffer(buffer.buffer))));*/
+console.log(
+  JSON.stringify(
+    bytecode.parser.parseBytecode(new readableBuffer(buffer.buffer))
+  )
+);*/
+
 console.log("Reassembling the main.class");
 mkdirSync("./testFiles");
 const assembledFile = classFile.writer.writeClassFile(parsedFile);

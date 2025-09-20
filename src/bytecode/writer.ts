@@ -1,10 +1,12 @@
-import { BytecodeInstruction, opcodeMnemonics, typeMapping } from "./types.js";
+import { BytecodeInstruction, opcodeMnemonics, operands, typeMapping } from "./types.js";
 import {
   disallowedError,
   disallowedLengthError,
 } from "../errors.js";
 import { writer } from "../constantPool/index.js";
 import { lengthWritableBuffer } from "../types.js";
+import { assertOperandType, splitBytecodeFormat } from "./helpers.js";
+import { assert } from "console";
 
 function assertCorrectType<char extends keyof typeMapping>(
   operand: unknown,
@@ -36,98 +38,68 @@ export function writeBytecode(
 ): void {
   const startLength = buffer.length;
   for (const instruction of bytecode) {
-    const { operands, wide, opcode, ctx } = instruction;
-    // Register context, do more strict checks later?
-    const poolIndexMapping: { [key in number]: number } = {};
-    for (const key of Object.keys(ctx)) {
-      poolIndexMapping[ctx[key as unknown as number].index] =
-        constantPool.registerEntry(ctx[key as unknown as number]);
-    }
-    const mnemonic = opcodeMnemonics[opcode];
+    const { operands, wide, opcode } = instruction;
     const pos = buffer.length - startLength;
-    if (!mnemonic) {
-      throw new Error(`Unknown opcode: ${opcode}`);
-    }
-    if (mnemonic.wideFormat === null && wide) {
-      throw new Error(
-        `Opcode ${mnemonic.mnemonic} (${opcode}) cannot be widened`
-      );
-    }
-    buffer.push(opcode);
+    const mnemonic = opcodeMnemonics[opcode];
 
     if (wide) {
       buffer.push(0xc4); // wide opcode
     }
+    buffer.push(opcode);
+
     if (opcode === 0xaa /* tableswitch */) {
       const padding = (4 - (pos % 4)) % 4;
       buffer.writeUint8Array(new Uint8Array(padding).fill(0));
       // Default offset, low, high, and jump offsets
       const defaultOffset = operands[0];
       const low = operands[1];
+      assertOperandType(low, "signedInt");
       const high = operands[2];
-      if (high - low + 1 !== operands[3].length) {
+      assertOperandType(high, "signedInt");
+      const jumpOffsets = operands[3];
+      assertOperandType(jumpOffsets, "jumpOffsets");
+      if (high.value - low.value + 1 !== jumpOffsets.value.length) {
         throw new disallowedLengthError(
-          `Invalid number of jump offsets: expected ${high - low + 1} but got ${
-            operands[3].length
+          `Invalid number of jump offsets: expected ${high.value - low.value + 1} but got ${
+            jumpOffsets.value.length
           }`
         );
       }
-      buffer.writeSignedInteger(defaultOffset, 4);
-      buffer.writeSignedInteger(low, 4);
-      buffer.writeSignedInteger(high, 4);
-      const jumpOffsets = operands[3];
-      for (const jumpOffset of jumpOffsets) {
-        buffer.writeSignedInteger(jumpOffset, 4);
+      buffer.writeSignedInteger(defaultOffset.value, 4);
+      buffer.writeSignedInteger(low.value, 4);
+      buffer.writeSignedInteger(high.value, 4);
+      for (const jumpOffset of jumpOffsets.value) {
+        assertOperandType(jumpOffset, "signedInt");
+        buffer.writeSignedInteger(jumpOffset.value, 4);
       }
     } else if (opcode === 0xab /* lookupswitch */) {
       const padding = (4 - (pos % 4)) % 4;
       buffer.writeUint8Array(new Uint8Array(padding).fill(0));
 
       const defaultOffset = operands[0];
-      const npairs = operands[1].length;
-      buffer.writeSignedInteger(defaultOffset, 4);
-      buffer.writeSignedInteger(npairs, 4);
+      assertOperandType(defaultOffset, "signedInt");
       const matchOffsetPairs = operands[1];
-      for (const [match, offset] of matchOffsetPairs) {
-        buffer.writeSignedInteger(match, 4);
-        buffer.writeSignedInteger(offset, 4);
+      assertOperandType(matchOffsetPairs, "matchOffsetPairs");
+      const npairs = matchOffsetPairs.value.length;
+      buffer.writeSignedInteger(defaultOffset.value, 4);
+      buffer.writeSignedInteger(npairs, 4);
+      for (const [match, offset] of matchOffsetPairs.value) {
+        assertOperandType(match, "signedInt");
+        buffer.writeSignedInteger(match.value, 4);
+        assertOperandType(offset, "signedInt");
+        buffer.writeSignedInteger(offset.value, 4);
       }
     } else {
       const _bytecodeFormat = wide ? mnemonic.wideFormat : mnemonic.format;
-      const bytecodeFormat = _bytecodeFormat as Exclude<
-        typeof _bytecodeFormat,
-        null
-      >;
-      // A HUGE mess, clean up
-      const kCount: number = bytecodeFormat
-        ?.split("")
-        .filter((value) => value === "k").length as unknown as number;
-      const countedChars = "ckisunloJ".split("");
-      const cleanFormat = bytecodeFormat
-        ?.split("")
-        .filter((value) => countedChars.includes(value)) as unknown as string[];
-
-      if (kCount === 1) {
-        const poolIndex = operands[cleanFormat.indexOf("k")] as number;
-        const newIndex = poolIndexMapping[poolIndex];
-        operands[cleanFormat.indexOf("k")] = newIndex;
-      } else if (kCount === 2) {
-        const poolIndex =
-          ((operands[cleanFormat.indexOf("k")] as number) << 8) |
-          (operands[cleanFormat.indexOf("k") + 1] as number);
-        const newIndex = poolIndexMapping[poolIndex];
-
-        operands[cleanFormat.indexOf("k")] = newIndex >> 8;
-        operands[cleanFormat.indexOf("k") + 1] = newIndex & 0xff;
-      }
+      const bytecodeFormat = splitBytecodeFormat(_bytecodeFormat as Exclude<typeof _bytecodeFormat, null>);
       for (
         let [index, operandIndex] = [0, 0];
         index < bytecodeFormat.length;
         index++
       ) {
-        const char = bytecodeFormat[index] as keyof typeMapping;
-        const operand: BytecodeInstruction["operands"][number] =
-          operands[operandIndex];
+        const char = bytecodeFormat[index];
+        const operand =
+          operands[operandIndex] as operands;
 
         switch (char) {
           case "b":
@@ -135,43 +107,38 @@ export function writeBytecode(
             buffer.push(operand);
             operandIndex++;*/
             break;
-          case "c": // unsigned byte
-          case "k": // constant pool index (u1)
-          case "i": // Unsigned byte operand
-            assertCorrectType(operand, char);
-            buffer.push(operand);
+          case "c": { // signed byte
+            assertOperandType(operand, "signedByte");
+            buffer.writeSignedIntegerByte(operand.value);
             operandIndex++;
             break;
-          case "s": // signed short
-            assertCorrectType(operand, char);
-            buffer.writeSignedInteger(operand, 2);
+          }
+          case "k": { // constant pool index (u1)
+            assertOperandType(operand, "constantPoolEntryShort");
+            const poolIndex = constantPool.registerEntry(operand.value);
+            buffer.push(poolIndex);
             operandIndex++;
             break;
-          case "u": // Unsigned short
-            assertCorrectType(operand, char);
-            buffer.writeUnsignedInt(operand, 2);
+          }
+          case "kk": { // constant pool index (u2)
+            assertOperandType(operand, "constantPoolEntry");
+            const poolIndex = constantPool.registerEntry(operand.value);
+            buffer.writeUnsignedInt(poolIndex, 2);
             operandIndex++;
             break;
-          case "n": // signed int
-            assertCorrectType(operand, char);
-            buffer.writeSignedInteger(operand, 4);
+          }
+          case "i": { // Local varible index (unsigned byte)
+            assertOperandType(operand, "localVariableIndex");
+            buffer.push(operand.value);
             operandIndex++;
             break;
-          case "l": // signed long (bigint)
-            assertCorrectType(operand, char);
-            buffer.writeSignedIntegerBigint(operand, 8);
+          }
+          case "o": { // Signed branch byte (signed byte)
+            assertOperandType(operand, "branchByte");
+            buffer.writeSignedIntegerByte(operand.value);
             operandIndex++;
             break;
-          case "o":
-            assertCorrectType(operand, char);
-            buffer.writeSignedInteger(operand, 2); // signed 16-bit offset
-            operandIndex++;
-            break;
-          case "J":
-            assertCorrectType(operand, char);
-            buffer.writeSignedInteger(operand, 4);
-            operandIndex++;
-            break;
+          }
           case "_":
             break;
           case "w": // Handled, skip

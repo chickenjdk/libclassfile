@@ -1,6 +1,13 @@
 import { PoolType } from "../constantPool/index.js";
 import { unwidenableOpcodeError, noOperandError, refError } from "../errors.js";
-import { BytecodeInstruction, opcodeMnemonics } from "./types.js";
+import { encapsulateOperand, splitBytecodeFormat } from "./helpers.js";
+import {
+  BytecodeInstruction,
+  opcodeMnemonics,
+  operands,
+  remapBytecodeFormat,
+  SignedIntOperand,
+} from "./types.js";
 import { readableBuffer } from "@chickenjdk/byteutils";
 
 export function parseBytecode(
@@ -13,8 +20,15 @@ export function parseBytecode(
   while (bytecodeBuffer.length > 0) {
     // Must be aligned relitive to the start of the bytecode
     const pos = bytecodeBuffer._offset - orgiginalPosition;
-    const { wideFormat, format, mnemonic, opcode } =
-      opcodeMnemonics[bytecodeBuffer.shift()];
+    const {
+      wideFormat,
+      format,
+      mnemonic,
+      opcode,
+      resultType,
+      stackEffect,
+      canTrap,
+    } = opcodeMnemonics[bytecodeBuffer.shift()];
     if (wideMode && (wideFormat === null || wideFormat === undefined)) {
       throw new unwidenableOpcodeError(
         `Opcode ${opcode} (${mnemonic}) may not be widened`
@@ -33,19 +47,32 @@ export function parseBytecode(
           const low = bytecodeBuffer.readSignedInteger(4);
           const high = bytecodeBuffer.readSignedInteger(4);
 
-          const jumpOffsets: number[] = [];
+          const jumpOffsets: SignedIntOperand[] = [];
           const count = high - low + 1;
           for (let i = 0; i < count; i++) {
-            jumpOffsets.push(bytecodeBuffer.readSignedInteger(4));
+            jumpOffsets.push(
+              encapsulateOperand(
+                "signedInt",
+                bytecodeBuffer.readSignedInteger(4)
+              )
+            );
           }
 
           instructions.push({
             pos,
             opcode,
             mnemonic: "tableswitch",
-            operands: [defaultOffset, low, high, jumpOffsets],
+            operands: [
+              encapsulateOperand("signedInt", defaultOffset),
+              encapsulateOperand("signedInt", low),
+              encapsulateOperand("signedInt", high),
+              // 4 for each jump offset
+              encapsulateOperand("jumpOffsets", jumpOffsets, 4 * count),
+            ],
             wide: false,
-            ctx: {},
+            resultType,
+            stackEffect,
+            canTrap,
           });
         }
         break;
@@ -57,57 +84,96 @@ export function parseBytecode(
           const defaultOffset = bytecodeBuffer.readSignedInteger(4);
           const npairs = bytecodeBuffer.readSignedInteger(4);
 
-          const matchOffsetPairs: [number, number][] = [];
+          const matchOffsetPairs: [SignedIntOperand, SignedIntOperand][] = [];
           for (let i = 0; i < npairs; i++) {
             const match = bytecodeBuffer.readSignedInteger(4);
             const offset = bytecodeBuffer.readSignedInteger(4);
-            matchOffsetPairs.push([match, offset]);
+            matchOffsetPairs.push([
+              encapsulateOperand("signedInt", match),
+              encapsulateOperand("signedInt", offset),
+            ]);
           }
 
           instructions.push({
             pos,
             opcode,
             mnemonic: "lookupswitch",
-            operands: [defaultOffset, matchOffsetPairs],
+            operands: [
+              encapsulateOperand("signedInt", defaultOffset),
+              // 4 for the match, and 4 for the offset
+              encapsulateOperand(
+                "matchOffsetPairs",
+                matchOffsetPairs,
+                8 * npairs
+              ),
+            ],
             wide: false,
-            ctx: {},
+            resultType,
+            stackEffect,
+            canTrap,
           });
         }
         break;
 
       default: /* normal opcode */
         const bytecodeFormat = wideMode ? wideFormat : format;
-        const operands = [];
-        for (const char of bytecodeFormat as Exclude<
-          typeof bytecodeFormat,
-          null
-        >) {
+        const operands: operands[] = [];
+        for (const char of splitBytecodeFormat(
+          bytecodeFormat as Exclude<typeof bytecodeFormat, null>
+        )) {
           switch (char) {
             case "b":
               //operands.push(opcode); // b = the opcode
               break;
-            case "c": // unsigned byte
-            case "k": // constant pool index (u1)
-            case "i": // Unsigned byte operand
-              operands.push(bytecodeBuffer.shift());
+            case "c": // signed byte
+              operands.push(
+                encapsulateOperand(
+                  "signedByte",
+                  bytecodeBuffer.readSignedIntegerByte()
+                )
+              );
               break;
-            case "s": // signed short
-              operands.push(bytecodeBuffer.readSignedInteger(2));
+            case "k": {
+              // constant pool index (u1)
+              const poolIndex = bytecodeBuffer.shift();
+              const poolEntry = constantPool[poolIndex];
+              if (poolEntry === undefined) {
+                throw new refError(
+                  `Bytecode refered to non-exsistent constant pool entry (Constant pool index ${poolIndex}, opcode ${opcode} (${mnemonic}))`
+                );
+              }
+              operands.push(
+                encapsulateOperand("constantPoolEntryShort", poolEntry)
+              );
               break;
-            case "u": // Unsigned short
-              operands.push(bytecodeBuffer.readUnsignedInt(2));
+            }
+            case "kk": {
+              // constant pool index (u2)
+              const poolIndex =
+                (bytecodeBuffer.shift() << 8) | bytecodeBuffer.shift();
+              const poolEntry = constantPool[poolIndex];
+              if (poolEntry === undefined) {
+                throw new refError(
+                  `Bytecode refered to non-exsistent constant pool entry (Constant pool index ${poolIndex}, opcode ${opcode} (${mnemonic}))`
+                );
+              }
+              operands.push(
+                encapsulateOperand("constantPoolEntry", poolEntry)
+              );
               break;
-            case "n": // signed int
-              operands.push(bytecodeBuffer.readSignedInteger(4));
+            }
+            case "i": // Local variable index (unsigned byte)
+              operands.push(
+                encapsulateOperand("localVariableIndex", bytecodeBuffer.shift())
+              );
               break;
-            case "l": // signed long (bigint)
-              operands.push(bytecodeBuffer.readSignedIntegerBigint(8));
-              break;
-            case "o":
-              operands.push(bytecodeBuffer.readSignedInteger(2)); // signed 16-bit offset
-              break;
-            case "J":
-              operands.push(bytecodeBuffer.readSignedInteger(4));
+            case "o": // Signed branch byte (signed byte)
+              operands.push(
+                encapsulateOperand(
+                  "branchByte",
+                  bytecodeBuffer.readSignedIntegerByte()
+                )
+              );
               break;
             case "_":
               break;
@@ -121,39 +187,6 @@ export function parseBytecode(
               );
           }
         }
-        // Kind of a mess, clean up
-        const kCount: number = bytecodeFormat
-          ?.split("")
-          .filter((value) => value === "k").length as unknown as number;
-        const countedChars = "ckisunloJ".split("");
-        const cleanFormat = bytecodeFormat
-          ?.split("")
-          .filter((value) =>
-            countedChars.includes(value)
-          ) as unknown as string[];
-
-        const ctx: PoolType = {};
-        if (kCount === 1) {
-          const poolIndex = operands[cleanFormat.indexOf("k")] as number;
-          const poolEntry = constantPool[poolIndex];
-          if (poolEntry === undefined) {
-            throw new refError(
-              "Bytecode refered to non-exsistent constant pool entry"
-            );
-          }
-          ctx[poolIndex] = poolEntry;
-        } else if (kCount === 2) {
-          const poolIndex =
-            ((operands[cleanFormat.indexOf("k")] as number) << 8) |
-            (operands[cleanFormat.indexOf("k") + 1] as number);
-          const poolEntry = constantPool[poolIndex];
-          if (poolEntry === undefined) {
-            throw new refError(
-              "Bytecode refered to non-exsistent constant pool entry"
-            );
-          }
-          ctx[poolIndex] = poolEntry;
-        }
         instructions.push({
           pos,
           opcode,
@@ -161,7 +194,9 @@ export function parseBytecode(
           // @ts-ignore
           operands,
           wide: wideMode,
-          ctx,
+          resultType,
+          stackEffect,
+          canTrap,
         });
         wideMode = false;
         break;
