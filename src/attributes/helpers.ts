@@ -887,28 +887,41 @@ export const predefinedValidClassFileAttributesMap = {
     "Deprecated",
     "Signature",
     "RuntimeVisibleAnnotations",
+    "RuntimeInvisibleAnnotations",
     "RuntimeVisibleTypeAnnotations",
+    "RuntimeInvisibleTypeAnnotations",
   ],
   field_info: [
     "ConstantValue",
+    "Synthetic",
+    "Deprecated",
     "Signature",
     "RuntimeVisibleAnnotations",
+    "RuntimeInvisibleAnnotations",
     "RuntimeVisibleTypeAnnotations",
+    "RuntimeInvisibleTypeAnnotations",
   ],
   method_info: [
     "Code",
     "Exceptions",
     "RuntimeVisibleParameterAnnotations",
+    "RuntimeInvisibleParameterAnnotations",
     "AnnotationDefault",
     "MethodParameters",
+    "Synthetic",
+    "Deprecated",
     "Signature",
     "RuntimeVisibleAnnotations",
+    "RuntimeInvisibleAnnotations",
     "RuntimeVisibleTypeAnnotations",
+    "RuntimeInvisibleTypeAnnotations",
   ],
   record_component_info: [
     "Signature",
     "RuntimeVisibleAnnotations",
+    "RuntimeInvisibleAnnotations",
     "RuntimeVisibleTypeAnnotations",
+    "RuntimeInvisibleTypeAnnotations",
   ],
   Code: [
     "LineNumberTable",
@@ -916,30 +929,29 @@ export const predefinedValidClassFileAttributesMap = {
     "LocalVariableTypeTable",
     "StackMapTable",
     "RuntimeVisibleTypeAnnotations",
+    "RuntimeInvisibleTypeAnnotations",
   ],
 } as const;
 /*
 Run in browser
+const tables = Array.from(document.getElementsByTagName("table")).filter(v => v.getAttribute("summary") === "Predefined class file attributes (by location)");
 const detable = (tbody) =>
   Array.from(tbody.children).map((line) =>
     [
-      line.children[1].children[0].textContent,
-      line.children[0].children[0].textContent,
+      line.children[1].textContent,
+      line.children[0].textContent,
       // @ts-ignore
     ].map((text) => text.replace(/[^A-z,]/gm, "").split(","))
   );
-Format
-const map = (unmapped
-//: [string[], string[]][]
-) =>
+const map = (unmapped) =>
   unmapped.reduce((map, item) => {
-    for (const key of item[0]) {
-      if (!(key in map)) {
-        map[key] = [];
-      }
-      map[key].push(...item[1]);
+      for (const key of item[0]) {
+        if (!(key in map)) {
+            map[key] = [];
+        }
+        map[key].push(...item[1]);
     }
     return map;
-  }, // {} as { [key in string]: string[] }
-  );
+  }, {});
+console.log(JSON.stringify(map(tables.map(v => detable(v.getElementsByTagName("tbody")[0])).flat(1))));
 */

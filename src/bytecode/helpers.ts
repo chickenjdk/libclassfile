@@ -13,6 +13,7 @@ import {
   MatchOffsetPairsOperand,
   operands,
   remapBytecodeFormat,
+  UnsignedByteOperand,
 } from "./types.js";
 import { unknownError } from "../errors.js";
 
@@ -24,6 +25,13 @@ export const templates = {
     description: "A signed byte (-128 to 127)",
     formatChar: "c",
   } as SignedByteOperand,
+  unsignedByte: {
+    type: "unsignedByte",
+    size: 1,
+    signed: false,
+    description: "An unsigned byte (0 to 255)",
+    formatChar: "b"
+  } as UnsignedByteOperand,
   branchByte: {
     type: "branchByte",
     size: 1,

@@ -23,7 +23,7 @@ export function writeClassFile(classFile: classFile): writableBuffer {
     if (Object.keys(classFile.constantPool).length !== 0) {
       log(
         "warning",
-        "Attribute provided a non-blank constant pool. Please provide {}."
+        "Class file provided a non-blank constant pool. Please provide {}."
       );
     }
     buffer.writeUint8Array(new Uint8Array([0xca, 0xfe, 0xba, 0xbe]));

@@ -13,10 +13,10 @@ const res = (
 ).match(/#define BYTECODES_DO\(def\)[\S\s]*?JVM_BYTECODES_DO\(def\)/)[0];
 const table = {
   bJJ: "bkk", // invoke*
-  bJJ__: "bkk__", // invokedynamic
+  bJJ__: "bkkb_", // invokeinterface
   bJJJJ: "", // tableswitch / lookupswitch → special
 };
-
+const overideTable = { 0xba: { format: "kk__" } };
 function remapMnemonics(mnemonics) {
   const result = [];
   for (const mnemonic of mnemonics) {
@@ -28,7 +28,21 @@ function remapMnemonics(mnemonics) {
         : mnemonic
     );
   }
-  return result;
+  return result
+    .map((mnemonic) => {
+      if (mnemonic.opcode in overideTable) {
+        return Object.assign({}, mnemonic, overideTable[mnemonic.opcode]);
+      }
+      return mnemonic;
+    })
+    .map((mnemonic) => {
+      return Object.assign({}, mnemonic, {
+        format: mnemonic.format.replace(/^b/g, ""),
+        wideFormat: mnemonic.wideFormat
+          ? mnemonic.wideFormat.replace(/^w/g, "").replace(/^b/g, "")
+          : null,
+      });
+    });
 }
 while ((match = regex.exec(res)) !== null) {
   const [

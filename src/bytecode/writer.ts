@@ -1,8 +1,10 @@
-import { BytecodeInstruction, opcodeMnemonics, operands, typeMapping } from "./types.js";
 import {
-  disallowedError,
-  disallowedLengthError,
-} from "../errors.js";
+  BytecodeInstruction,
+  opcodeMnemonics,
+  operands,
+  typeMapping,
+} from "./types.js";
+import { disallowedError, disallowedLengthError } from "../errors.js";
 import { writer } from "../constantPool/index.js";
 import { lengthWritableBuffer } from "../types.js";
 import { assertOperandType, splitBytecodeFormat } from "./helpers.js";
@@ -48,7 +50,7 @@ export function writeBytecode(
     buffer.push(opcode);
 
     if (opcode === 0xaa /* tableswitch */) {
-      const padding = (4 - (pos % 4)) % 4;
+      const padding = (4 - ((pos + 1) % 4)) % 4; // See parser.ts for explanation
       buffer.writeUint8Array(new Uint8Array(padding).fill(0));
       // Default offset, low, high, and jump offsets
       const defaultOffset = operands[0];
@@ -60,20 +62,20 @@ export function writeBytecode(
       assertOperandType(jumpOffsets, "jumpOffsets");
       if (high.value - low.value + 1 !== jumpOffsets.value.length) {
         throw new disallowedLengthError(
-          `Invalid number of jump offsets: expected ${high.value - low.value + 1} but got ${
-            jumpOffsets.value.length
-          }`
+          `Invalid number of jump offsets: expected ${
+            high.value - low.value + 1
+          } but got ${jumpOffsets.value.length}`
         );
       }
-      buffer.writeSignedInteger(defaultOffset.value, 4);
-      buffer.writeSignedInteger(low.value, 4);
-      buffer.writeSignedInteger(high.value, 4);
+      buffer.writeTwosComplement(defaultOffset.value, 4);
+      buffer.writeTwosComplement(low.value, 4);
+      buffer.writeTwosComplement(high.value, 4);
       for (const jumpOffset of jumpOffsets.value) {
         assertOperandType(jumpOffset, "signedInt");
-        buffer.writeSignedInteger(jumpOffset.value, 4);
+        buffer.writeTwosComplement(jumpOffset.value, 4);
       }
     } else if (opcode === 0xab /* lookupswitch */) {
-      const padding = (4 - (pos % 4)) % 4;
+      const padding = (4 - ((pos + 1) % 4)) % 4;
       buffer.writeUint8Array(new Uint8Array(padding).fill(0));
 
       const defaultOffset = operands[0];
@@ -81,67 +83,72 @@ export function writeBytecode(
       const matchOffsetPairs = operands[1];
       assertOperandType(matchOffsetPairs, "matchOffsetPairs");
       const npairs = matchOffsetPairs.value.length;
-      buffer.writeSignedInteger(defaultOffset.value, 4);
-      buffer.writeSignedInteger(npairs, 4);
+      buffer.writeTwosComplement(defaultOffset.value, 4);
+      buffer.writeTwosComplement(npairs, 4);
       for (const [match, offset] of matchOffsetPairs.value) {
         assertOperandType(match, "signedInt");
-        buffer.writeSignedInteger(match.value, 4);
+        buffer.writeTwosComplement(match.value, 4);
         assertOperandType(offset, "signedInt");
-        buffer.writeSignedInteger(offset.value, 4);
+        buffer.writeTwosComplement(offset.value, 4);
       }
     } else {
       const _bytecodeFormat = wide ? mnemonic.wideFormat : mnemonic.format;
-      const bytecodeFormat = splitBytecodeFormat(_bytecodeFormat as Exclude<typeof _bytecodeFormat, null>);
+      const bytecodeFormat = splitBytecodeFormat(
+        _bytecodeFormat as Exclude<typeof _bytecodeFormat, null>
+      );
       for (
         let [index, operandIndex] = [0, 0];
         index < bytecodeFormat.length;
         index++
       ) {
         const char = bytecodeFormat[index];
-        const operand =
-          operands[operandIndex] as operands;
+        const operand = operands[operandIndex] as operands;
 
         switch (char) {
           case "b":
-            /*assertCorrectType(operand, char);
-            buffer.push(operand);
-            operandIndex++;*/
+            assertOperandType(operand, "unsignedByte");
+            buffer.push(operand.value);
+            operandIndex++;
             break;
-          case "c": { // signed byte
+          case "c": {
+            // signed byte
             assertOperandType(operand, "signedByte");
-            buffer.writeSignedIntegerByte(operand.value);
+            buffer.writeTwosComplementByte(operand.value);
             operandIndex++;
             break;
           }
-          case "k": { // constant pool index (u1)
+          case "k": {
+            // constant pool index (u1)
             assertOperandType(operand, "constantPoolEntryShort");
             const poolIndex = constantPool.registerEntry(operand.value);
             buffer.push(poolIndex);
             operandIndex++;
             break;
           }
-          case "kk": { // constant pool index (u2)
+          case "kk": {
+            // constant pool index (u2)
             assertOperandType(operand, "constantPoolEntry");
             const poolIndex = constantPool.registerEntry(operand.value);
             buffer.writeUnsignedInt(poolIndex, 2);
             operandIndex++;
             break;
           }
-          case "i": { // Local varible index (unsigned byte)
+          case "i": {
+            // Local varible index (unsigned byte)
             assertOperandType(operand, "localVariableIndex");
             buffer.push(operand.value);
             operandIndex++;
             break;
           }
-          case "o": { // Signed branch byte (signed byte)
+          case "o": {
+            // Signed branch byte (signed byte)
             assertOperandType(operand, "branchByte");
-            buffer.writeSignedIntegerByte(operand.value);
+            buffer.writeTwosComplementByte(operand.value);
             operandIndex++;
             break;
           }
           case "_":
-            break;
-          case "w": // Handled, skip
+            buffer.push(0); // Signifys a 0
             break;
           default:
             throw new Error(

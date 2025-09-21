@@ -136,7 +136,7 @@ function parseFieldOrArrayTypeSignature(c: Cursor): FieldTypeSignature {
   if (ch === '[') { 
     c.take(); 
     const element = parseTypeSignatureInner(c);
-    if (element.kind !== 'base' && element.kind !== 'classType' && element.kind !== 'typeVar') {
+    if (element.kind !== 'base' && element.kind !== 'classType' && element.kind !== 'typeVar' && element.kind !== 'array') {
       throw new Error(`Invalid array element type '${element.kind}'`);
     }
     return { kind: 'array', element } as ArrayType<BaseType | ClassType | TypeVariable>; 

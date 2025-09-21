@@ -28,10 +28,10 @@
   },
   "homepage": "https://github.com/chickenjdk/libclassfile#readme",
   "peerDependencies": {
-    "@chickenjdk/byteutils": "^3.2.1"
+    "@chickenjdk/byteutils": "^3.3.1"
   },
   "devDependencies": {
-    "@chickenjdk/byteutils": "^3.2.1",
+    "@chickenjdk/byteutils": "^3.3.1",
     "@types/node": "^22.10.1",
     "typedoc": "^0.28.5"
   },

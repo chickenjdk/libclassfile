@@ -84,7 +84,9 @@ const testBytecodeCases = [
     label: "tableswitch (special, padded to 4 bytes)",
     bytes: Uint8Array.from([
       0xaa, // tableswitch
-      // padding not needed
+      0x00, // 3 bytes padding
+      0x00,
+      0x00,
       0xff,
       0xff,
       0xff,
@@ -111,7 +113,9 @@ const testBytecodeCases = [
     label: "lookupswitch (special, padded to 4 bytes)",
     bytes: Uint8Array.from([
       0xab, // lookupswitch
-      // padding not needed
+      0x00, // 3 bytes padding
+      0x00,
+      0x00,
       0x00,
       0x00,
       0x00,

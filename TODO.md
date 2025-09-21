@@ -1,3 +1,3 @@
 [x] Handle signitures
-[ ] Handle attribute location discrimination
-     
+[x] Handle attribute location discrimination
+[] Fix signature module naming convention

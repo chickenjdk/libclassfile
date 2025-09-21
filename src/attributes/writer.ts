@@ -180,7 +180,7 @@ export function writeAttribute(
         // Method
         if (attribute.method) {
           const methodIndex = constantPool.registerEntry(attribute.method);
-          customAssertInfoType(10, methodIndex, attribute.method);
+          customAssertInfoType(12, methodIndex, attribute.method); // NameAndType
           flushBuff.writeUnsignedInt(methodIndex, 2);
         } else {
           flushBuff.writeUnsignedInt(0, 2); // No method
@@ -383,7 +383,7 @@ export function writeAttribute(
             bootstrapMethod.bootstrapMethod
           );
           customAssertInfoType(
-            1,
+            15,
             bootstrapMethodIndex,
             bootstrapMethod.bootstrapMethod
           );
