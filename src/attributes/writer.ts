@@ -202,7 +202,7 @@ export function writeAttribute(
         >;
         const signatureEntry = {
           tag: 1,
-          value: writer.assembleSignature(attribute.signature),
+          value: writer.writeSignature(attribute.signature),
           index: 0,
         } as const;
         const signatureIndex = constantPool.registerEntry(signatureEntry);
@@ -258,7 +258,7 @@ export function writeAttribute(
           flushBuff.writeUnsignedInt(nameIndex, 2);
           const descriptorEntry: utf8Info = {
             tag: 1,
-            value: signatureWriter.assembleFieldDescriptor(variable.descriptor),
+            value: signatureWriter.writeFieldDescriptor(variable.descriptor),
             index: 0,
           };
           const descriptorIndex = constantPool.registerEntry(descriptorEntry);
@@ -283,7 +283,7 @@ export function writeAttribute(
           flushBuff.writeUnsignedInt(nameIndex, 2);
           const signatureEntry: utf8Info = {
             tag: 1,
-            value: signatureWriter.assembleFieldTypeSignature(variable_type.signature),
+            value: signatureWriter.writeFieldTypeSignature(variable_type.signature),
             index: 0,
           };
           const signatureIndex = constantPool.registerEntry(signatureEntry);
