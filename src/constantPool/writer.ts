@@ -10,6 +10,7 @@ import {
 import { assertInRange, inRange } from "@chickenjdk/common";
 import { isDeepStrictEqual } from "util";
 import { assertInfoType } from "./helpers.js";
+import { writeDescriptor } from "../signature/writer.js";
 export function writeConstantPool(buffer: writableBuffer, pool: PoolRegister) {
   const flushBuff = new flushSinkWritableBuffer();
   const flushBuff2 = new flushSinkWritableBuffer();
@@ -95,11 +96,13 @@ export function writeConstantPool(buffer: writableBuffer, pool: PoolRegister) {
         const index = pool.registerEntry(entry.name);
         assertInfoType(1, index, entry.name, "name_and_type_info");
         flushBuff.writeUnsignedInt(index, 2);
-        const descriptorIndex = pool.registerEntry(entry.descriptor);
+        const descriptor = writeDescriptor(entry.descriptor);
+        const descriptorEntry = { tag: 1, value: descriptor, index: 0} as const;
+        const descriptorIndex = pool.registerEntry(descriptorEntry);
         assertInfoType(
           1,
           descriptorIndex,
-          entry.descriptor,
+          descriptorEntry,
           "name_and_type_info"
         );
         flushBuff.writeUnsignedInt(descriptorIndex, 2);

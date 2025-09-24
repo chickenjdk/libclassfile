@@ -47,7 +47,12 @@ Parsed class file of source code with this package
       },
       "nameAndType": {
         "name": { "value": "<init>", "tag": 1, "index": 5 },
-        "descriptor": { "value": "()V", "tag": 1, "index": 6 },
+        "descriptor": {
+          "kind": "methodDescriptor",
+          "parameters": [],
+          "returnType": { "kind": "void" }
+        },
+        "descriptorEntry": { "value": "()V", "tag": 1, "index": 6 },
         "tag": 12,
         "index": 3
       },
@@ -61,7 +66,12 @@ Parsed class file of source code with this package
     },
     "3": {
       "name": { "value": "<init>", "tag": 1, "index": 5 },
-      "descriptor": { "value": "()V", "tag": 1, "index": 6 },
+      "descriptor": {
+        "kind": "methodDescriptor",
+        "parameters": [],
+        "returnType": { "kind": "void" }
+      },
+      "descriptorEntry": { "value": "()V", "tag": 1, "index": 6 },
       "tag": 12,
       "index": 3
     },
@@ -77,6 +87,11 @@ Parsed class file of source code with this package
       "nameAndType": {
         "name": { "value": "out", "tag": 1, "index": 11 },
         "descriptor": {
+          "kind": "classType",
+          "packageAndOuter": "java/io/PrintStream",
+          "simpleNames": [{ "identifier": "PrintStream" }]
+        },
+        "descriptorEntry": {
           "value": "Ljava/io/PrintStream;",
           "tag": 1,
           "index": 12
@@ -94,7 +109,16 @@ Parsed class file of source code with this package
     },
     "9": {
       "name": { "value": "out", "tag": 1, "index": 11 },
-      "descriptor": { "value": "Ljava/io/PrintStream;", "tag": 1, "index": 12 },
+      "descriptor": {
+        "kind": "classType",
+        "packageAndOuter": "java/io/PrintStream",
+        "simpleNames": [{ "identifier": "PrintStream" }]
+      },
+      "descriptorEntry": {
+        "value": "Ljava/io/PrintStream;",
+        "tag": 1,
+        "index": 12
+      },
       "tag": 12,
       "index": 9
     },
@@ -116,6 +140,17 @@ Parsed class file of source code with this package
       "nameAndType": {
         "name": { "value": "println", "tag": 1, "index": 19 },
         "descriptor": {
+          "kind": "methodDescriptor",
+          "parameters": [
+            {
+              "kind": "classType",
+              "packageAndOuter": "java/lang/String",
+              "simpleNames": [{ "identifier": "String" }]
+            }
+          ],
+          "returnType": { "kind": "void" }
+        },
+        "descriptorEntry": {
           "value": "(Ljava/lang/String;)V",
           "tag": 1,
           "index": 20
@@ -133,7 +168,22 @@ Parsed class file of source code with this package
     },
     "17": {
       "name": { "value": "println", "tag": 1, "index": 19 },
-      "descriptor": { "value": "(Ljava/lang/String;)V", "tag": 1, "index": 20 },
+      "descriptor": {
+        "kind": "methodDescriptor",
+        "parameters": [
+          {
+            "kind": "classType",
+            "packageAndOuter": "java/lang/String",
+            "simpleNames": [{ "identifier": "String" }]
+          }
+        ],
+        "returnType": { "kind": "void" }
+      },
+      "descriptorEntry": {
+        "value": "(Ljava/lang/String;)V",
+        "tag": 1,
+        "index": 20
+      },
       "tag": 12,
       "index": 17
     },
@@ -205,35 +255,55 @@ Parsed class file of source code with this package
               "mnemonic": "aload_0",
               "operands": [],
               "wide": false,
-              "ctx": {}
+              "resultType": "T_OBJECT",
+              "stackEffect": 1,
+              "canTrap": true
             },
             {
               "pos": 1,
               "opcode": 183,
               "mnemonic": "invokespecial",
-              "operands": [0, 1],
-              "wide": false,
-              "ctx": {
-                "1": {
-                  "class": {
-                    "name": {
-                      "value": "java/lang/Object",
-                      "tag": 1,
-                      "index": 4
+              "operands": [
+                {
+                  "type": "constantPoolEntry",
+                  "size": 2,
+                  "signed": false,
+                  "description": "A constant pool entry (index 0 to 65535)",
+                  "formatChar": "kk",
+                  "value": {
+                    "class": {
+                      "name": {
+                        "value": "java/lang/Object",
+                        "tag": 1,
+                        "index": 4
+                      },
+                      "tag": 7,
+                      "index": 2
                     },
-                    "tag": 7,
-                    "index": 2
-                  },
-                  "nameAndType": {
-                    "name": { "value": "<init>", "tag": 1, "index": 5 },
-                    "descriptor": { "value": "()V", "tag": 1, "index": 6 },
-                    "tag": 12,
-                    "index": 3
-                  },
-                  "tag": 10,
-                  "index": 1
+                    "nameAndType": {
+                      "name": { "value": "<init>", "tag": 1, "index": 5 },
+                      "descriptor": {
+                        "kind": "methodDescriptor",
+                        "parameters": [],
+                        "returnType": { "kind": "void" }
+                      },
+                      "descriptorEntry": {
+                        "value": "()V",
+                        "tag": 1,
+                        "index": 6
+                      },
+                      "tag": 12,
+                      "index": 3
+                    },
+                    "tag": 10,
+                    "index": 1
+                  }
                 }
-              }
+              ],
+              "wide": false,
+              "resultType": "T_ILLEGAL",
+              "stackEffect": -1,
+              "canTrap": true
             },
             {
               "pos": 4,
@@ -241,7 +311,9 @@ Parsed class file of source code with this package
               "mnemonic": "return",
               "operands": [],
               "wide": false,
-              "ctx": {}
+              "resultType": "T_VOID",
+              "stackEffect": 0,
+              "canTrap": true
             }
           ],
           "exceptionTable": [],
@@ -287,83 +359,126 @@ Parsed class file of source code with this package
               "pos": 0,
               "opcode": 178,
               "mnemonic": "getstatic",
-              "operands": [0, 7],
-              "wide": false,
-              "ctx": {
-                "7": {
-                  "class": {
-                    "name": {
-                      "value": "java/lang/System",
-                      "tag": 1,
-                      "index": 10
+              "operands": [
+                {
+                  "type": "constantPoolEntry",
+                  "size": 2,
+                  "signed": false,
+                  "description": "A constant pool entry (index 0 to 65535)",
+                  "formatChar": "kk",
+                  "value": {
+                    "class": {
+                      "name": {
+                        "value": "java/lang/System",
+                        "tag": 1,
+                        "index": 10
+                      },
+                      "tag": 7,
+                      "index": 8
                     },
-                    "tag": 7,
-                    "index": 8
-                  },
-                  "nameAndType": {
-                    "name": { "value": "out", "tag": 1, "index": 11 },
-                    "descriptor": {
-                      "value": "Ljava/io/PrintStream;",
-                      "tag": 1,
-                      "index": 12
+                    "nameAndType": {
+                      "name": { "value": "out", "tag": 1, "index": 11 },
+                      "descriptor": {
+                        "kind": "classType",
+                        "packageAndOuter": "java/io/PrintStream",
+                        "simpleNames": [{ "identifier": "PrintStream" }]
+                      },
+                      "descriptorEntry": {
+                        "value": "Ljava/io/PrintStream;",
+                        "tag": 1,
+                        "index": 12
+                      },
+                      "tag": 12,
+                      "index": 9
                     },
-                    "tag": 12,
-                    "index": 9
-                  },
-                  "tag": 9,
-                  "index": 7
+                    "tag": 9,
+                    "index": 7
+                  }
                 }
-              }
+              ],
+              "wide": false,
+              "resultType": "T_ILLEGAL",
+              "stackEffect": 1,
+              "canTrap": true
             },
             {
               "pos": 3,
               "opcode": 18,
               "mnemonic": "ldc",
-              "operands": [13],
-              "wide": false,
-              "ctx": {
-                "13": {
+              "operands": [
+                {
+                  "type": "constantPoolEntryShort",
+                  "size": 1,
+                  "signed": false,
+                  "description": "A constant pool entry (index 0 to 255)",
+                  "formatChar": "k",
                   "value": {
-                    "value": "Hello, world! Test test!",
-                    "tag": 1,
-                    "index": 14
-                  },
-                  "tag": 8,
-                  "index": 13
+                    "value": {
+                      "value": "Hello, world! Test test!",
+                      "tag": 1,
+                      "index": 14
+                    },
+                    "tag": 8,
+                    "index": 13
+                  }
                 }
-              }
+              ],
+              "wide": false,
+              "resultType": "T_ILLEGAL",
+              "stackEffect": 1,
+              "canTrap": true
             },
             {
               "pos": 5,
               "opcode": 182,
               "mnemonic": "invokevirtual",
-              "operands": [0, 15],
-              "wide": false,
-              "ctx": {
-                "15": {
-                  "class": {
-                    "name": {
-                      "value": "java/io/PrintStream",
-                      "tag": 1,
-                      "index": 18
+              "operands": [
+                {
+                  "type": "constantPoolEntry",
+                  "size": 2,
+                  "signed": false,
+                  "description": "A constant pool entry (index 0 to 65535)",
+                  "formatChar": "kk",
+                  "value": {
+                    "class": {
+                      "name": {
+                        "value": "java/io/PrintStream",
+                        "tag": 1,
+                        "index": 18
+                      },
+                      "tag": 7,
+                      "index": 16
                     },
-                    "tag": 7,
-                    "index": 16
-                  },
-                  "nameAndType": {
-                    "name": { "value": "println", "tag": 1, "index": 19 },
-                    "descriptor": {
-                      "value": "(Ljava/lang/String;)V",
-                      "tag": 1,
-                      "index": 20
+                    "nameAndType": {
+                      "name": { "value": "println", "tag": 1, "index": 19 },
+                      "descriptor": {
+                        "kind": "methodDescriptor",
+                        "parameters": [
+                          {
+                            "kind": "classType",
+                            "packageAndOuter": "java/lang/String",
+                            "simpleNames": [{ "identifier": "String" }]
+                          }
+                        ],
+                        "returnType": { "kind": "void" }
+                      },
+                      "descriptorEntry": {
+                        "value": "(Ljava/lang/String;)V",
+                        "tag": 1,
+                        "index": 20
+                      },
+                      "tag": 12,
+                      "index": 17
                     },
-                    "tag": 12,
-                    "index": 17
-                  },
-                  "tag": 10,
-                  "index": 15
+                    "tag": 10,
+                    "index": 15
+                  }
                 }
-              }
+              ],
+              "wide": false,
+              "resultType": "T_ILLEGAL",
+              "stackEffect": -1,
+              "canTrap": true
             },
             {
               "pos": 8,
@@ -371,7 +486,9 @@ Parsed class file of source code with this package
               "mnemonic": "return",
               "operands": [],
               "wide": false,
-              "ctx": {}
+              "resultType": "T_VOID",
+              "stackEffect": 0,
+              "canTrap": true
             }
           ],
           "exceptionTable": [],

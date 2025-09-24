@@ -2,6 +2,7 @@
 // Parsing utilities for JVM Descriptors (§4.3.2–§4.3.3) and Signatures (§4.7.9.1)
 // Depends on types from jvm-signature-types.ts
 
+import { Cursor } from './helpers.js';
 import {
   BaseType,
   BaseTypeName,
@@ -37,16 +38,6 @@ const codeByBase: Record<BaseTypeName, string> = Object.fromEntries(
   Object.entries(baseByCode).map(([k, v]) => [v as BaseTypeName, k])
 ) as any;
 
-// ---------------- low-level cursor ----------------
-class Cursor {
-  s: string;
-  i: number = 0;
-  constructor(s: string) { this.s = s; }
-  peek(): string | null { return this.i < this.s.length ? this.s[this.i] : null; }
-  take(): string { if (this.i >= this.s.length) throw new Error(`Unexpected end at ${this.i}`); return this.s[this.i++]; }
-  expect(ch: string) { const g = this.take(); if (g !== ch) throw new Error(`Expected '${ch}' but got '${g}' @${this.i-1}`); }
-  done(): boolean { return this.i >= this.s.length; }
-}
 
 // ---------------- shared helpers ----------------
 function parseBaseType(c: Cursor): BaseType { const ch = c.take(); const name = baseByCode[ch]; if (!name) throw new Error(`Not a base type code '${ch}'`); return { kind: 'base', name }; }

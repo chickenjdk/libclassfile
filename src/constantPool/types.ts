@@ -1,5 +1,6 @@
 import { makeMutable, Expand } from "@chickenjdk/common";
 import { expansionIgnoreListSafe } from "../types.js";
+import { FieldDescriptor, MethodDescriptor } from "../signature/index.js";
 
 /**
  * @private
@@ -62,11 +63,15 @@ export type doubleInfo = Expand<
   addIndex<{ tag: 6; value: number }>,
   expansionIgnoreListSafe
 >;
+/**
+ * Descriptor entry is the raw descriptor string entry, not used in the constant pool writer, it is just for lower-level use in parsing
+ */
 export type nameAndTypeInfo = Expand<
   addIndex<{
     tag: 12;
     name: utf8Info;
-    descriptor: utf8Info;
+    descriptorEntry: utf8Info; 
+    descriptor: FieldDescriptor | MethodDescriptor;
   }>,
   expansionIgnoreListSafe
 >;
@@ -125,15 +130,14 @@ export type constantPoolEntry =
   | dynamicInfo
   | moduleOrPackageInfo;
 export type PoolType = {
-  [key in number]:
-  constantPoolEntry;
+  [key in number]: constantPoolEntry;
 };
 export type poolTags = constantPoolEntry["tag"];
 /**
  * @private
  */
 export type findInfoTypeByTag<Tag extends poolTags> = Extract<
-constantPoolEntry,
+  constantPoolEntry,
   { tag: Tag }
 >;
 export type loadableTags =

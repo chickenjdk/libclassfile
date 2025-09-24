@@ -1,5 +1,9 @@
 import type { readableBuffer } from "@chickenjdk/byteutils";
-import { constantPoolUnknownTagError, unknownTagError } from "../errors.js";
+import {
+  constantPoolUnknownTagError,
+  disallowedError,
+  unknownTagError,
+} from "../errors.js";
 import { assertInRange, prioritizedHook } from "@chickenjdk/common";
 import {
   constantPoolEntry,
@@ -8,6 +12,7 @@ import {
   PoolType,
 } from "./types.js";
 import { assertInfoType as __assertInfoType_old__ } from "./helpers.js";
+import { parseDescriptor, parseSignatureAny } from "../signature/parser.js";
 function assertInfoType<expectedTag extends poolTags | poolTags[]>(
   expectedTag: expectedTag,
   entryIndex: number,
@@ -55,6 +60,19 @@ export function readConstantPool(buffer: readableBuffer) {
             tag,
             poolIndex,
           ]);
+          if (
+            nameAndTypeEntry.descriptorEntry.value.startsWith("(") ===
+            (tag === 9)
+          ) {
+            // method descriptor
+            throw new disallowedError(
+              `Expected got wrong descriptor type (${
+                nameAndTypeEntry.descriptorEntry.value.startsWith("(")
+                  ? "method descriptor"
+                  : "field descriptor"
+              }) in constant pool at index ${nameAndTypeIndex} (from index ${poolIndex} with tag ${tag})`
+            );
+          }
           pool[poolIndex] = {
             class: classEntry,
             nameAndType: nameAndTypeEntry,
@@ -113,9 +131,11 @@ export function readConstantPool(buffer: readableBuffer) {
           const descriptorEntry = pool[descriptorIndex];
           assertInfoType(1, nameIndex, nameEntry, [tag, poolIndex]);
           assertInfoType(1, descriptorIndex, descriptorEntry, [tag, poolIndex]);
+          const descriptor = parseDescriptor(descriptorEntry.value);
           pool[poolIndex] = {
             name: nameEntry,
-            descriptor: descriptorEntry,
+            descriptor,
+            descriptorEntry,
             tag,
             index: poolIndex,
           };
@@ -212,13 +232,27 @@ export function readConstantPool(buffer: readableBuffer) {
         });
         break;
       }
-      case 17:
+      case 17: // dynamicInfo
       case 18: {
+        // invokeDynamicInfo
         const bootstrapMethodAttrIndex = buffer.readUnsignedInt(2);
         const nameAndTypeIndex = buffer.readUnsignedInt(2);
         waterfall.addListener(1, () => {
           const nameAndType = pool[nameAndTypeIndex];
           assertInfoType(12, nameAndTypeIndex, nameAndType, [tag, poolIndex]);
+          if (
+            nameAndType.descriptorEntry.value.startsWith("(") ===
+            (tag === 17)
+          ) {
+            // method descriptor
+            throw new disallowedError(
+              `Expected got wrong descriptor type (${
+                nameAndType.descriptorEntry.value.startsWith("(")
+                  ? "method descriptor"
+                  : "field descriptor"
+              }) in constant pool at index ${nameAndTypeIndex} (from index ${poolIndex} with tag ${tag})`
+            );
+          }
           pool[poolIndex] = {
             bootstrapMethodAttrIndex,
             nameAndType,

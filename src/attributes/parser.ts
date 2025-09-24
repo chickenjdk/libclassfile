@@ -209,6 +209,11 @@ export function readAttribute(
       const method: constantPoolEntry = constantPool[methodIndex];
       if (methodIndex !== 0) {
         customAssertInfoType(12, methodIndex, method);
+        if (!method.descriptorEntry.value.startsWith("(")) {
+          throw new disallowedError(
+            `enclosing method name_and_type_info descriptor must be a method descriptor but got ${method.descriptorEntry.value}`
+          );
+        }
       }
       check();
       // Nothing to worry about, typescript does not know that if methodIndex === 0 then method === undefined (With a range type from 1 to 65535 it would most likely work)

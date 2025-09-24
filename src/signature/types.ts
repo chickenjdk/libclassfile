@@ -27,14 +27,14 @@ export interface ClassType {
 export interface TypeVariable { kind: 'typeVar'; name: string } // TName;
 
 export interface Wildcard { kind: 'wildcard'; tag: '*' }
-export interface Extends { kind: 'extends'; type: ClassType | TypeVariable | ArrayType<BaseType | ClassType | TypeVariable> }
-export interface Super { kind: 'super'; type: ClassType | TypeVariable | ArrayType<BaseType | ClassType | TypeVariable> }
-export type TypeArgument = Wildcard | Extends | Super | { kind: 'arg'; type: ClassType | TypeVariable | ArrayType<BaseType | ClassType | TypeVariable> };
+export interface Extends { kind: 'extends'; type: NonVoidFieldLike }
+export interface Super { kind: 'super'; type: NonVoidFieldLike }
+export type TypeArgument = Wildcard | Extends | Super | { kind: 'arg'; type: NonVoidFieldLike };
 
 export interface TypeParameter {
   name: string;
-  classBound?: ClassType | TypeVariable | ArrayType<BaseType | ClassType | TypeVariable>; // optional (missing => extends Object)
-  interfaceBounds?: (ClassType | TypeVariable | ArrayType<BaseType | ClassType | TypeVariable>)[]; // zero or more
+  classBound?: NonVoidFieldLike; // optional (missing => extends Object)
+  interfaceBounds?: (NonVoidFieldLike)[]; // zero or more
 }
 
 // ----------------------------- Descriptor & Signature unions -----------------------------
